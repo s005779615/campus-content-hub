@@ -1,0 +1,9 @@
+node_modules
+.next
+.npm-cache
+.env
+.env.local
+.env.*.local
+preview.log
+preview.err.log
+tsconfig.tsbuildinfo
