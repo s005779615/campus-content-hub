@@ -24,32 +24,79 @@ type ChatCompletionProvider = {
   supportsJsonMode: boolean;
 };
 
+export type FriendlyModelInfo = {
+  displayName: string;
+  description: string;
+  strengths: string[];
+};
+
 export type AiProviderStatus = {
   provider: AiProvider;
   label: string;
   configured: boolean;
   model: string;
+  friendly: FriendlyModelInfo;
 };
+
+/** 把技术模型 ID 映射为面向运营团队的友好名称和技能定位 */
+function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyModelInfo {
+  const lower = model.toLowerCase();
+
+  if (provider === "doubao") {
+    if (lower.includes("deepseek")) {
+      return {
+        displayName: "深度爆款版",
+        description: "深度理解平台推荐算法，精准洞察高校新生行为偏好，生成高互动、高转化的爆款内容。适合打造差异化选题和强共鸣文案。",
+        strengths: ["平台算法机制", "新生人群洞察", "高转化文案", "爆款选题策划", "评论区互动引导"]
+      };
+    }
+    if (lower.includes("doubao")) {
+      return {
+        displayName: "校园灵感版",
+        description: "快节奏校园攻略生成，擅长开学必备清单、宿舍探店测评、小红书种草风格。适合日常高频更新和视觉化内容创意。",
+        strengths: ["开学季攻略", "宿舍好物清单", "食堂探店测评", "小红书种草文", "校园周边指南"]
+      };
+    }
+  }
+
+  if (provider === "openai") {
+    return {
+      displayName: "通用创作版",
+      description: "通用型内容生成，可根据不同平台和场景灵活适配。",
+      strengths: ["多平台适配", "灵活风格切换", "通用场景覆盖"]
+    };
+  }
+
+  return {
+    displayName: "基础模板",
+    description: "基于学校资料本地生成，不依赖外部 AI，作为兜底方案。",
+    strengths: ["基础覆盖", "离线可用", "零成本"]
+  };
+}
 
 export function getAiProviderStatus(): AiProviderStatus {
   const provider = resolveAiProvider();
 
   if (provider === "doubao") {
     const apiKey = getDoubaoApiKey();
+    const model = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215";
     return {
       provider,
       label: "豆包 / 火山方舟",
       configured: Boolean(apiKey),
-      model: process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215"
+      model,
+      friendly: getFriendlyModelInfo(model, provider)
     };
   }
 
   if (provider === "openai") {
+    const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
     return {
       provider,
       label: "OpenAI",
       configured: Boolean(process.env.OPENAI_API_KEY),
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini"
+      model,
+      friendly: getFriendlyModelInfo(model, provider)
     };
   }
 
@@ -57,7 +104,8 @@ export function getAiProviderStatus(): AiProviderStatus {
     provider,
     label: "本地模板",
     configured: true,
-    model: "template"
+    model: "template",
+    friendly: getFriendlyModelInfo("template", provider)
   };
 }
 

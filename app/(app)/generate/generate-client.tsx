@@ -289,14 +289,14 @@ function AiStatusBanner({ status }: { status: AiProviderStatus }) {
         <div className="min-w-0">
           <p className="font-medium">
             {isReady
-              ? `当前使用 ${status.label}`
+              ? `${status.friendly.displayName} · 已激活`
               : isTemplate
                 ? "当前使用本地模板"
-                : `${status.label} 未配置`}
+                : "AI 引擎未配置"}
           </p>
           <p className="mt-1 leading-5">
             {isReady
-              ? `模型：${status.model}`
+              ? status.friendly.description
               : "要生成更真实、不重复的内容，请在 Vercel 环境变量中配置豆包 API Key 后重新部署。"}
           </p>
         </div>
