@@ -185,9 +185,23 @@ async function generateWithChatCompletions(
   }
 
   const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{
+      message?: {
+        content?: string;
+        reasoning_content?: string;
+      };
+    }>;
   };
-  const content = data.choices?.[0]?.message?.content;
+  const msg = data.choices?.[0]?.message;
+  let content = msg?.content;
+
+  // DeepSeek 等推理模型可能把实际内容放在 reasoning_content
+  if (!content && msg?.reasoning_content) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[AI] content 为空，回退使用 reasoning_content");
+    }
+    content = msg.reasoning_content;
+  }
 
   if (!content) {
     throw new Error(`${provider.label} 返回内容为空。`);
