@@ -218,6 +218,12 @@ async function generateWithChatCompletions(
     body.response_format = { type: "json_object" };
   }
 
+  // DeepSeek 推理模型需要显式启用 thinking，否则火山方舟会报错：
+  // "thinking options type cannot be disabled when reasoning_effort is set"
+  if (provider.model.toLowerCase().includes("deepseek")) {
+    body.thinking = { type: "enabled" };
+  }
+
   const response = await fetch(provider.endpoint, {
     method: "POST",
     headers: {
