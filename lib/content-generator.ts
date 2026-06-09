@@ -205,6 +205,11 @@ function getDoubaoApiKey() {
 }
 
 function normalizeChatEndpoint(baseUrl: string) {
+  // 防护：如果 baseUrl 不像 URL（可能是误填的模型 ID），回退到默认地址
+  if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
+    console.warn("[AI] DOUBAO_BASE_URL 不是有效 URL，已回退到默认地址");
+    return "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+  }
   const trimmed = baseUrl.replace(/\/+$/, "");
 
   if (trimmed.endsWith("/chat/completions")) {
