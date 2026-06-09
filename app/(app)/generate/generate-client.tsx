@@ -87,10 +87,18 @@ export function GenerateClient({
       output: GeneratedOutput;
       riskHits: RiskHit[];
     };
+
+    // 防御：确保 output 有基本结构，防止渲染崩溃
+    if (!data.output || typeof data.output !== "object") {
+      setMessage("AI 返回内容格式异常，请切换模型或稍后重试。");
+      setMessageType("error");
+      return;
+    }
+
     setResult({
       payload: { ...payload, model: selectedModel },
       output: data.output,
-      riskHits: data.riskHits
+      riskHits: Array.isArray(data.riskHits) ? data.riskHits : [],
     });
   }
 
