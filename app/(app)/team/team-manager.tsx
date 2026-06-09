@@ -116,16 +116,17 @@ export function TeamManager({
 
   return (
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-      <section className="panel p-4">
-        <h2 className="text-sm font-semibold text-ink">创建队员账号</h2>
-        <form className="mt-4 space-y-3" onSubmit={createMember}>
+      <section className="panel p-5">
+        <h2 className="text-sm font-bold text-ink">创建队员账号</h2>
+        <p className="mt-0.5 text-xs text-muted-light">队员通过邮箱和密码登录后台。</p>
+        <form className="mt-4 space-y-3.5" onSubmit={createMember}>
           <label className="block">
             <span className="form-label">队员姓名</span>
             <input className="form-input mt-1" name="fullName" placeholder="例如：小马" />
           </label>
           <label className="block">
             <span className="form-label">登录邮箱</span>
-            <input className="form-input mt-1" name="email" type="email" required />
+            <input className="form-input mt-1" name="email" type="email" required placeholder="member@example.com" />
           </label>
           <label className="block">
             <span className="form-label">初始密码</span>
@@ -135,10 +136,11 @@ export function TeamManager({
               type="password"
               minLength={6}
               required
+              placeholder="至少 6 位"
             />
           </label>
           {error ? (
-            <div className="rounded-md border border-coral-500/30 bg-coral-50 px-3 py-2 text-sm text-coral-600">
+            <div className="rounded-lg border border-coral-100 bg-coral-50/70 px-4 py-2.5 text-[13px] font-medium text-coral-600">
               {error}
             </div>
           ) : null}
@@ -150,20 +152,21 @@ export function TeamManager({
       </section>
 
       <section className="panel overflow-hidden">
-        <div className="border-b border-line px-4 py-3">
-          <h2 className="text-sm font-semibold text-ink">学校分配</h2>
+        <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-ink">学校分配</h2>
+          <span className="text-[11px] text-muted-light">{members.length} 名队员</span>
         </div>
-        <div className="divide-y divide-line">
+        <div className="divide-y divide-line/50">
           {members.length ? (
             members.map((member) => (
-              <article key={member.id} className="px-4 py-4">
+              <article key={member.id} className="px-5 py-5">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-ink">
+                    <h3 className="text-[15px] font-semibold text-ink">
                       {member.full_name || member.email}
                     </h3>
-                    <p className="mt-1 text-xs text-muted">{member.email}</p>
-                    <p className="mt-2 text-xs text-muted">
+                    <p className="mt-0.5 text-[12px] text-muted-light">{member.email}</p>
+                    <p className="mt-2 text-[12px] text-muted">
                       已分配：
                       {assignedNames[member.id]?.length
                         ? assignedNames[member.id].join("、")
@@ -171,43 +174,50 @@ export function TeamManager({
                     </p>
                   </div>
                   <button
-                    className="button-secondary shrink-0"
+                    className="button-secondary text-xs shrink-0"
                     onClick={() => saveSchools(member.id)}
                     disabled={savingMemberId === member.id}
                     type="button"
                   >
                     {savingMemberId === member.id ? (
-                      <Loader2 className="animate-spin" size={16} />
+                      <Loader2 className="animate-spin" size={14} />
                     ) : (
-                      <Save size={16} />
+                      <Save size={14} />
                     )}
                     保存分配
                   </button>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {schools.length ? (
-                    schools.map((school) => (
-                      <label
-                        key={school.id}
-                        className="flex cursor-pointer items-start gap-2 rounded-md border border-line bg-canvas/60 p-3 text-sm transition hover:border-brand-100 hover:bg-brand-50"
-                      >
-                        <input
-                          className="mt-1 h-4 w-4 accent-brand-600"
-                          checked={(selection[member.id] ?? []).includes(school.id)}
-                          onChange={() => toggleSchool(member.id, school.id)}
-                          type="checkbox"
-                        />
-                        <span>
-                          <span className="block font-medium text-ink">{school.name}</span>
-                          <span className="text-xs text-muted">
-                            {school.campus_name || "未填写校区"} · {school.city}
+                    schools.map((school) => {
+                      const isSelected = (selection[member.id] ?? []).includes(school.id);
+                      return (
+                        <label
+                          key={school.id}
+                          className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-all duration-200 ${
+                            isSelected
+                              ? "border-brand-200 bg-brand-50/70 ring-1 ring-brand-100"
+                              : "border-line/60 bg-white hover:border-brand-100 hover:bg-brand-50/30"
+                          }`}
+                        >
+                          <input
+                            className="mt-0.5 h-4 w-4 rounded accent-brand-600"
+                            checked={isSelected}
+                            onChange={() => toggleSchool(member.id, school.id)}
+                            type="checkbox"
+                          />
+                          <span className="min-w-0">
+                            <span className="block font-medium text-ink">{school.name}</span>
+                            <span className="text-[11px] text-muted-light">
+                              {school.campus_name || "未填写校区"} · {school.city}
+                            </span>
                           </span>
-                        </span>
-                      </label>
-                    ))
+                        </label>
+                      );
+                    })
                   ) : (
-                    <div className="col-span-full rounded-md border border-line bg-canvas p-4 text-sm text-muted">
+                    <div className="col-span-full rounded-lg border border-line bg-canvas-alt px-4 py-3 text-[13px] text-muted-light">
                       还没有学校，先到学校管理页创建。
                     </div>
                   )}
@@ -215,7 +225,7 @@ export function TeamManager({
               </article>
             ))
           ) : (
-            <div className="px-4 py-8 text-center text-sm text-muted">
+            <div className="px-5 py-10 text-center text-[13px] text-muted-light">
               还没有队员账号。
             </div>
           )}

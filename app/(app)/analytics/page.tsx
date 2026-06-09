@@ -100,30 +100,30 @@ export default async function AnalyticsPage() {
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="panel overflow-hidden">
-          <div className="border-b border-line px-4 py-3">
-            <h2 className="text-sm font-semibold text-ink">私信最多的内容</h2>
+          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
+            <h2 className="text-sm font-bold text-ink">私信最多的内容</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-canvas text-xs text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-medium">内容</th>
-                  <th className="px-4 py-3 font-medium">学校</th>
-                  <th className="px-4 py-3 font-medium">平台</th>
-                  <th className="px-4 py-3 font-medium">私信</th>
-                  <th className="px-4 py-3 font-medium">加微信</th>
-                  <th className="px-4 py-3 font-medium">时间</th>
+            <table className="w-full min-w-[720px] text-left">
+              <thead>
+                <tr className="border-b border-line/50 bg-canvas-alt/40">
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">内容</th>
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">学校</th>
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">平台</th>
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">私信</th>
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">加微信</th>
+                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">时间</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-line/50">
                 {topPrivateMessages.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-3">{item.content_records?.content_type ?? "-"}</td>
-                    <td className="px-4 py-3">{item.schools?.name ?? "-"}</td>
-                    <td className="px-4 py-3"><PlatformBadge platform={item.platform} /></td>
-                    <td className="px-4 py-3 font-medium">{item.private_messages}</td>
-                    <td className="px-4 py-3">{item.wechat_adds}</td>
-                    <td className="px-4 py-3 text-muted">{formatDateTime(item.created_at)}</td>
+                  <tr key={item.id} className="transition-colors hover:bg-canvas-alt/30">
+                    <td className="px-5 py-3 text-[13px] font-medium text-ink">{item.content_records?.content_type ?? "-"}</td>
+                    <td className="px-5 py-3 text-[13px] text-ink-soft">{item.schools?.name ?? "-"}</td>
+                    <td className="px-5 py-3"><PlatformBadge platform={item.platform} /></td>
+                    <td className="px-5 py-3 text-[13px] font-semibold text-ink">{item.private_messages}</td>
+                    <td className="px-5 py-3 text-[13px] text-ink-soft">{item.wechat_adds}</td>
+                    <td className="px-5 py-3 text-[12px] text-muted-light">{formatDateTime(item.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -132,25 +132,28 @@ export default async function AnalyticsPage() {
         </section>
 
         <section className="panel overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-            <School size={17} className="text-brand-700" />
-            <h2 className="text-sm font-semibold text-ink">学校转化表现</h2>
+          <div className="flex items-center gap-2.5 border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <School size={15} />
+            </div>
+            <h2 className="text-sm font-bold text-ink">学校转化表现</h2>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-line/50">
             {schoolConversionRows.length ? (
               schoolConversionRows.map((row) => (
-                <div key={row.schoolName} className="px-4 py-3">
+                <div key={row.schoolName} className="px-5 py-4 transition-colors hover:bg-canvas-alt/30">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-ink">{row.schoolName}</p>
-                    <p className="text-sm font-semibold text-brand-700">{row.conversions} 成交</p>
+                    <p className="text-[13px] font-semibold text-ink">{row.schoolName}</p>
+                    <span className="badge bg-brand-50 text-brand-700">{row.conversions} 成交</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted">
-                    私信 {row.privateMessages} · 加微信 {row.wechatAdds}
-                  </p>
+                  <div className="mt-1.5 flex items-center gap-3 text-[12px] text-muted-light">
+                    <span>私信 {row.privateMessages}</span>
+                    <span>加微信 {row.wechatAdds}</span>
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="px-4 py-8 text-center text-sm text-muted">暂无发布回填数据。</div>
+              <div className="px-5 py-10 text-center text-[13px] text-muted-light">暂无发布回填数据。</div>
             )}
           </div>
         </section>
@@ -177,11 +180,11 @@ function RankingPanel({
 }) {
   return (
     <section className="panel overflow-hidden">
-      <div className="border-b border-line px-4 py-3">
-        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+      <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
+        <h2 className="text-sm font-bold text-ink">{title}</h2>
       </div>
-      <div className="divide-y divide-line">
-        {children || <div className="px-4 py-8 text-center text-sm text-muted">暂无数据。</div>}
+      <div className="divide-y divide-line/50">
+        {children || <div className="px-5 py-10 text-center text-[13px] text-muted-light">暂无数据。</div>}
       </div>
     </section>
   );
@@ -195,9 +198,9 @@ function MetricRow({
   value: string | number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <div className="min-w-0 truncate text-sm text-ink">{label}</div>
-      <div className="shrink-0 text-sm font-semibold text-brand-700">{value}</div>
+    <div className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-canvas-alt/40">
+      <div className="min-w-0 truncate text-[13px] font-medium text-ink-soft">{label}</div>
+      <div className="shrink-0 text-[13px] font-bold text-brand-700">{value}</div>
     </div>
   );
 }

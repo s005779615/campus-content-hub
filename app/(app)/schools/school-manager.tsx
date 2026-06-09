@@ -149,46 +149,51 @@ export function SchoolManager({
   return (
     <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
       <section className="panel overflow-hidden">
-        <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <h2 className="text-sm font-semibold text-ink">学校列表</h2>
+        <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-ink">学校列表</h2>
           {canEdit ? (
-            <button className="button-secondary" onClick={startCreate} type="button">
-              <Plus size={16} />
+            <button className="button-secondary text-xs" onClick={startCreate} type="button">
+              <Plus size={15} />
               新增
             </button>
           ) : null}
         </div>
-        <div className="divide-y divide-line">
+        <div className="divide-y divide-line/50">
           {schools.length ? (
             schools.map((school) => (
-              <article key={school.id} className="px-4 py-3">
+              <article
+                key={school.id}
+                className={`px-5 py-4 transition-colors hover:bg-canvas-alt/40 ${
+                  editing?.id === school.id ? "bg-brand-50/50 ring-1 ring-inset ring-brand-100" : ""
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold text-ink">{school.name}</h3>
-                    <p className="mt-1 text-xs text-muted">
+                    <h3 className="truncate text-[15px] font-semibold text-ink">{school.name}</h3>
+                    <p className="mt-1 text-[12px] text-muted-light">
                       {school.campus_name || "未填写校区"} · {school.city}
                     </p>
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
+                    <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-muted">
                       {school.dormitory_info || school.registration_notes || "资料待补充"}
                     </p>
                   </div>
                   {canEdit ? (
-                    <div className="flex shrink-0 gap-1">
+                    <div className="flex shrink-0 gap-0.5">
                       <button
-                        className="button-ghost h-9 w-9 p-0"
+                        className="button-ghost h-8 w-8 p-0"
                         onClick={() => startEdit(school)}
                         type="button"
                         aria-label="编辑学校"
                       >
-                        <Edit3 size={16} />
+                        <Edit3 size={15} />
                       </button>
                       <button
-                        className="button-ghost h-9 w-9 p-0 text-coral-600 hover:bg-coral-50 hover:text-coral-600"
+                        className="button-ghost h-8 w-8 p-0 text-muted-light hover:text-coral-600 hover:bg-coral-50"
                         onClick={() => deleteSchool(school.id)}
                         type="button"
                         aria-label="删除学校"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   ) : null}
@@ -196,30 +201,32 @@ export function SchoolManager({
               </article>
             ))
           ) : (
-            <div className="px-4 py-8 text-center text-sm text-muted">
+            <div className="px-5 py-10 text-center text-[13px] text-muted-light">
               还没有学校资料。
             </div>
           )}
         </div>
       </section>
 
-      <section className="panel p-4">
+      <section className="panel p-5">
         {canEdit ? (
           <form onSubmit={submit}>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-ink">{selectedTitle}</h2>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-bold text-ink">{selectedTitle}</h2>
               {editing ? (
-                <button className="button-ghost" onClick={startCreate} type="button">
-                  <X size={16} />
+                <button className="button-ghost text-xs" onClick={startCreate} type="button">
+                  <X size={15} />
                   取消编辑
                 </button>
               ) : null}
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-6">
               {fieldGroups.map((group) => (
                 <div key={group.title}>
-                  <h3 className="mb-3 text-xs font-semibold text-muted">{group.title}</h3>
+                  <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">
+                    {group.title}
+                  </h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {group.fields.map((field) => (
                       <label
@@ -261,7 +268,7 @@ export function SchoolManager({
             </div>
 
             {error ? (
-              <div className="mt-4 rounded-md border border-coral-500/30 bg-coral-50 px-3 py-2 text-sm text-coral-600">
+              <div className="mt-4 rounded-lg border border-coral-100 bg-coral-50/70 px-4 py-2.5 text-[13px] font-medium text-coral-600">
                 {error}
               </div>
             ) : null}
@@ -273,7 +280,7 @@ export function SchoolManager({
           </form>
         ) : (
           <div>
-            <h2 className="text-sm font-semibold text-ink">资料说明</h2>
+            <h2 className="text-sm font-bold text-ink">资料说明</h2>
             <p className="mt-2 text-sm leading-6 text-muted">
               队员账号只能查看已分配学校。发现宿舍、食堂、报到或禁用话术有变化时，请联系管理员更新资料库。
             </p>

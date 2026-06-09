@@ -19,14 +19,14 @@ export function ContentOutput({
 
   return (
     <div className="panel overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5">
           <PlatformBadge platform={platform} />
-          <span className="text-sm font-medium">生成结果</span>
+          <span className="text-[13px] font-semibold text-ink">生成结果</span>
         </div>
         <CopyButton text={allText} label="复制全文" />
       </div>
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-5">
         {platform === "小红书" ? (
           <XiaohongshuView output={output as XiaohongshuOutput} />
         ) : platform === "抖音" ? (
@@ -47,9 +47,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-line bg-canvas/50 p-3">
-      <h3 className="text-xs font-semibold text-muted">{title}</h3>
-      <div className="mt-2 text-sm leading-6 text-ink">{children}</div>
+    <section className="rounded-xl border border-line/60 bg-white p-4 transition-shadow hover:shadow-sm">
+      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-light">{title}</h3>
+      <div className="mt-2.5 text-sm leading-7 text-ink-soft">{children}</div>
     </section>
   );
 }

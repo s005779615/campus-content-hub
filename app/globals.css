@@ -12,14 +12,17 @@
 
 html {
   min-height: 100%;
-  background: #f6f8f7;
+  background: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   min-height: 100%;
   margin: 0;
-  color: #17211f;
-  background: #f6f8f7;
+  color: #0f1729;
+  background: #f8fafc;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 button,
@@ -31,33 +34,97 @@ select {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
+/* ── Focus ring ── */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
 }
 
+/* ── Form elements ── */
 .form-input {
-  @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm outline-none transition placeholder:text-muted/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  @apply w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition-all duration-200 placeholder:text-muted-light;
+}
+.form-input:hover {
+  @apply border-muted-lighter;
+}
+.form-input:focus {
+  @apply border-brand-400 ring-2 ring-brand-50 shadow-none;
 }
 
 .form-label {
-  @apply text-xs font-medium text-muted;
+  @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted;
 }
 
+/* ── Panel / card ── */
 .panel {
-  @apply rounded-lg border border-line bg-white shadow-panel;
+  @apply rounded-xl border border-line/60 bg-white shadow-card transition-shadow duration-200;
+}
+.panel:hover {
+  @apply shadow-elevated;
 }
 
+/* ── Buttons ── */
 .button-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-brand-700 hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
 }
 
 .button-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-brand-100 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-medium text-ink-soft shadow-sm transition-all duration-200 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
 }
 
 .button-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted transition hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-all duration-200 hover:bg-canvas-alt hover:text-ink active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
+}
+
+/* ── Subtle gradient background strip ── */
+.gradient-strip-top {
+  position: relative;
+}
+.gradient-strip-top::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #34d399, #a7f3d0);
+  border-radius: 8px 8px 0 0;
+}
+
+/* ── Glass morphism for header ── */
+.glass-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Decorative icon circle ── */
+.icon-circle {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+}
+.icon-circle-brand {
+  @apply icon-circle bg-brand-50 text-brand-600;
+}
+.icon-circle-coral {
+  @apply icon-circle bg-coral-50 text-coral-500;
+}
+.icon-circle-skyline {
+  @apply icon-circle bg-skyline-50 text-skyline-600;
+}
+
+/* ── Page section headings ── */
+.section-heading {
+  @apply text-xs font-semibold uppercase tracking-widest text-muted;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  @apply flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-line bg-canvas-alt/50 px-6 py-16 text-center;
+}
+
+/* ── Badge / tag ── */
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
 }

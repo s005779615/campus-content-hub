@@ -30,8 +30,8 @@ export function ContentLibrary({ contents }: { contents: ContentRecord[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-        <label className="block sm:w-52">
+      <div className="panel flex flex-col gap-4 p-4 sm:flex-row sm:items-end">
+        <label className="block sm:w-48">
           <span className="form-label">平台</span>
           <select className="form-input mt-1" value={platform} onChange={(event) => setPlatform(event.target.value)}>
             <option value="全部">全部平台</option>
@@ -42,7 +42,7 @@ export function ContentLibrary({ contents }: { contents: ContentRecord[] }) {
             ))}
           </select>
         </label>
-        <label className="block sm:w-64">
+        <label className="block sm:w-56">
           <span className="form-label">学校</span>
           <select className="form-input mt-1" value={school} onChange={(event) => setSchool(event.target.value)}>
             <option value="全部">全部学校</option>
@@ -53,6 +53,9 @@ export function ContentLibrary({ contents }: { contents: ContentRecord[] }) {
             ))}
           </select>
         </label>
+        <span className="text-xs text-muted-light">
+          共 {filtered.length} 条内容
+        </span>
       </div>
 
       <div className="space-y-4">
@@ -102,49 +105,58 @@ function ContentCard({ content }: { content: ContentRecord }) {
 
   return (
     <article className="panel overflow-hidden">
-      <div className="flex flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <PlatformBadge platform={content.platform} />
-            <h2 className="truncate text-sm font-semibold text-ink">
+            <h2 className="truncate text-[15px] font-semibold text-ink">
               {content.content_type} · {content.schools?.name ?? "未命名学校"}
             </h2>
           </div>
-          <p className="mt-1 text-xs text-muted">
-            {content.content_goal} / {content.tone} / {formatDateTime(content.created_at)}
-            {content.profiles ? ` / ${content.profiles.full_name || content.profiles.email}` : ""}
+          <p className="mt-1.5 text-[12px] text-muted-light">
+            {content.content_goal} · {content.tone} · {formatDateTime(content.created_at)}
+            {content.profiles ? ` · ${content.profiles.full_name || content.profiles.email}` : ""}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-2 text-[12px] text-muted">
             发布回填 {publicationCount} 条
-            {latestPublication ? ` · 最近播放 ${latestPublication.views}` : ""}
+            {latestPublication ? ` · 最近播放 ${latestPublication.views.toLocaleString()}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="button-secondary" onClick={() => setOpen((current) => !current)} type="button">
-            <ChevronDown size={16} />
+          <button
+            className="button-secondary text-xs"
+            onClick={() => setOpen((current) => !current)}
+            type="button"
+          >
+            <ChevronDown size={15} className={`transition-transform ${open ? "rotate-180" : ""}`} />
             {open ? "收起内容" : "查看内容"}
           </button>
-          <button className="button-primary" onClick={() => setShowPublish((current) => !current)} type="button">
-            <Send size={16} />
+          <button
+            className="button-primary text-xs"
+            onClick={() => setShowPublish((current) => !current)}
+            type="button"
+          >
+            <Send size={15} />
             回填发布数据
           </button>
         </div>
       </div>
 
       {content.risk_hits?.length ? (
-        <div className="px-4 pb-4">
+        <div className="px-5 pb-4">
           <RiskAlert hits={content.risk_hits} />
         </div>
       ) : null}
 
       {open ? (
-        <div className="border-t border-line p-4">
+        <div className="border-t border-line/50 bg-canvas-alt/30 p-5">
           <ContentOutput platform={content.platform} output={content.output} />
         </div>
       ) : null}
 
       {showPublish ? (
-        <form className="border-t border-line bg-canvas/70 p-4" onSubmit={submitPublication}>
+        <form className="border-t border-line/50 bg-canvas-alt/40 p-5" onSubmit={submitPublication}>
+          <h3 className="mb-4 text-sm font-semibold text-ink">发布数据回填</h3>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="form-label">发布时间</span>
@@ -175,7 +187,7 @@ function ContentCard({ content }: { content: ContentRecord }) {
           </div>
 
           {message ? (
-            <div className="mt-3 rounded-md border border-line bg-white px-3 py-2 text-sm text-muted">
+            <div className="mt-4 rounded-lg border border-line bg-white px-4 py-2.5 text-[13px] text-muted">
               {message}
             </div>
           ) : null}

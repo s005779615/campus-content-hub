@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, X } from "lucide-react";
+import { ChevronRight, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 import { appName, navItems } from "@/lib/constants";
@@ -32,7 +32,8 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 border-b border-line/50 glass-header">
         <div className="flex h-14 items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -40,34 +41,43 @@ export function AppShell({
               onClick={() => setOpen(true)}
               aria-label="打开导航"
             >
-              <Menu size={19} />
+              <Menu size={20} />
             </button>
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-600 text-sm font-bold text-white">
+            <Link href="/dashboard" className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
                 校
               </span>
-              <span className="text-sm font-semibold sm:text-base">{appName}</span>
+              <span className="text-[15px] font-semibold tracking-tight text-ink">{appName}</span>
             </Link>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium leading-5">
+              <p className="text-[13px] font-semibold leading-5 text-ink-soft">
                 {profile.full_name || profile.email}
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-[11px] font-medium text-muted-light">
                 {profile.role === "admin" ? "管理员" : "队员"}
               </p>
             </div>
-            <button className="button-ghost h-9 w-9 p-0" onClick={signOut} aria-label="退出登录">
-              <LogOut size={18} />
-            </button>
+            <div className="flex items-center gap-1 rounded-lg border border-line/80 bg-white p-0.5">
+              <button
+                className="flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted transition-all hover:bg-canvas-alt hover:text-ink"
+                onClick={signOut}
+                aria-label="退出登录"
+              >
+                <LogOut size={14} />
+                <span className="hidden sm:inline">退出</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <aside className="sticky top-14 hidden h-[calc(100vh-56px)] w-56 shrink-0 border-r border-line bg-white px-3 py-4 lg:block">
-          <nav className="space-y-1">
+        {/* ── Desktop Sidebar ── */}
+        <aside className="sticky top-14 hidden h-[calc(100vh-56px)] w-[232px] shrink-0 border-r border-line/40 bg-white/60 px-3 py-5 lg:block">
+          <nav className="space-y-0.5">
             {visibleItems.map((item) => {
               const active = pathname === item.href;
               const Icon = item.icon;
@@ -77,39 +87,65 @@ export function AppShell({
                   key={item.href}
                   href={item.href}
                   className={clsx(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition",
+                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
                     active
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-muted hover:bg-canvas hover:text-ink"
+                      ? "bg-brand-50 text-brand-700 shadow-sm"
+                      : "text-muted hover:bg-canvas-alt hover:text-ink"
                   )}
                 >
-                  <Icon size={18} />
-                  {item.label}
+                  <Icon
+                    size={18}
+                    className={clsx(
+                      "transition-colors duration-200",
+                      active ? "text-brand-500" : "text-muted-light group-hover:text-muted"
+                    )}
+                  />
+                  <span className="flex-1">{item.label}</span>
+                  {active ? (
+                    <ChevronRight size={14} className="text-brand-400" />
+                  ) : null}
                 </Link>
               );
             })}
           </nav>
+
+          {/* Sidebar footer */}
+          <div className="mt-6 rounded-lg border border-brand-100/60 bg-gradient-to-br from-brand-50/80 to-white p-3.5">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-brand-500" />
+              <p className="text-[12px] font-semibold text-brand-700">校园内容中台</p>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-5 text-muted-light">
+              非官方校园生活攻略 · 学长学姐视角 · 新生避坑
+            </p>
+          </div>
         </aside>
 
+        {/* ── Mobile Drawer ── */}
         {open ? (
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
-              className="absolute inset-0 bg-ink/30"
+              className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
               onClick={() => setOpen(false)}
               aria-label="关闭导航遮罩"
             />
-            <aside className="absolute left-0 top-0 h-full w-72 bg-white p-4 shadow-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-semibold">{appName}</span>
+            <aside className="absolute left-0 top-0 flex h-full w-[280px] flex-col bg-white shadow-nav">
+              <div className="flex h-14 items-center justify-between border-b border-line px-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
+                    校
+                  </span>
+                  <span className="text-sm font-semibold">{appName}</span>
+                </div>
                 <button
                   className="button-ghost h-9 w-9 p-0"
                   onClick={() => setOpen(false)}
                   aria-label="关闭导航"
                 >
-                  <X size={18} />
+                  <X size={19} />
                 </button>
               </div>
-              <nav className="space-y-1">
+              <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
                 {visibleItems.map((item) => {
                   const active = pathname === item.href;
                   const Icon = item.icon;
@@ -120,10 +156,10 @@ export function AppShell({
                       href={item.href}
                       onClick={() => setOpen(false)}
                       className={clsx(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition",
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                         active
                           ? "bg-brand-50 text-brand-700"
-                          : "text-muted hover:bg-canvas hover:text-ink"
+                          : "text-muted hover:bg-canvas-alt hover:text-ink"
                       )}
                     >
                       <Icon size={18} />
@@ -136,7 +172,8 @@ export function AppShell({
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8">{children}</main>
+        {/* ── Main Content ── */}
+        <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 lg:px-10">{children}</main>
       </div>
     </div>
   );
