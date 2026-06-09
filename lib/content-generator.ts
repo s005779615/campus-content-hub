@@ -25,6 +25,7 @@ type ChatCompletionProvider = {
 };
 
 export type FriendlyModelInfo = {
+  id: string;
   displayName: string;
   description: string;
   strengths: string[];
@@ -35,42 +36,98 @@ export type AiProviderStatus = {
   label: string;
   configured: boolean;
   model: string;
+  models: FriendlyModelInfo[];
   friendly: FriendlyModelInfo;
 };
 
-/** 把技术模型 ID 映射为面向运营团队的友好名称和技能定位 */
-function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyModelInfo {
-  const lower = model.toLowerCase();
+// ---- 模型注册表：所有可用模型定义在这里 ----
+const KNOWN_MODELS: Record<string, FriendlyModelInfo> = {
+  "deepseek-v4-pro-260425": {
+    id: "deepseek-v4-pro-260425",
+    displayName: "深度爆款版",
+    description: "深度理解平台推荐算法，精准洞察高校新生行为偏好，生成高互动、高转化的爆款内容。适合打造差异化选题和强共鸣文案。",
+    strengths: ["平台算法机制", "新生人群洞察", "高转化文案", "爆款选题策划", "评论区互动引导"]
+  },
+  "doubao-seed-2-0-lite-260215": {
+    id: "doubao-seed-2-0-lite-260215",
+    displayName: "校园灵感版",
+    description: "快节奏校园攻略生成，擅长开学必备清单、宿舍探店测评、小红书种草风格。适合日常高频更新和视觉化内容创意。",
+    strengths: ["开学季攻略", "宿舍好物清单", "食堂探店测评", "小红书种草文", "校园周边指南"]
+  },
+  "doubao-seed-2-0-260215": {
+    id: "doubao-seed-2-0-260215",
+    displayName: "校园灵感版 Pro",
+    description: "豆包旗舰模型，更强的内容创作能力，适合对质量要求更高的深度长文和系列策划。",
+    strengths: ["深度长文", "系列策划", "复杂场景", "更高一致性", "品牌调性把控"]
+  },
+  "gpt-4o-mini": {
+    id: "gpt-4o-mini",
+    displayName: "通用创作版",
+    description: "通用型内容生成，可根据不同平台和场景灵活适配。",
+    strengths: ["多平台适配", "灵活风格切换", "通用场景覆盖"]
+  },
+  "gpt-4o": {
+    id: "gpt-4o",
+    displayName: "通用旗舰版",
+    description: "OpenAI 旗舰模型，复杂推理和长文创作能力最强。",
+    strengths: ["复杂推理", "深度长文", "多语言", "创意写作"]
+  }
+};
+
+/** 获取可用的模型列表（根据当前 provider 和配置） */
+export function getAvailableModels(): FriendlyModelInfo[] {
+  const provider = resolveAiProvider();
+
+  if (provider === "template") {
+    return [{
+      id: "template",
+      displayName: "基础模板",
+      description: "基于学校资料本地生成，不依赖外部 AI。",
+      strengths: ["基础覆盖", "离线可用", "零成本"]
+    }];
+  }
 
   if (provider === "doubao") {
-    if (lower.includes("deepseek")) {
-      return {
-        displayName: "深度爆款版",
-        description: "深度理解平台推荐算法，精准洞察高校新生行为偏好，生成高互动、高转化的爆款内容。适合打造差异化选题和强共鸣文案。",
-        strengths: ["平台算法机制", "新生人群洞察", "高转化文案", "爆款选题策划", "评论区互动引导"]
-      };
-    }
-    if (lower.includes("doubao")) {
-      return {
-        displayName: "校园灵感版",
-        description: "快节奏校园攻略生成，擅长开学必备清单、宿舍探店测评、小红书种草风格。适合日常高频更新和视觉化内容创意。",
-        strengths: ["开学季攻略", "宿舍好物清单", "食堂探店测评", "小红书种草文", "校园周边指南"]
-      };
-    }
+    // 豆包 provider 下，DeepSeek 和豆包模型都可用（同一火山方舟 API）
+    const configuredModel = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215";
+    return [
+      KNOWN_MODELS["deepseek-v4-pro-260425"],
+      KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
+      KNOWN_MODELS["doubao-seed-2-0-260215"],
+    ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
 
   if (provider === "openai") {
-    return {
-      displayName: "通用创作版",
-      description: "通用型内容生成，可根据不同平台和场景灵活适配。",
-      strengths: ["多平台适配", "灵活风格切换", "通用场景覆盖"]
-    };
+    const configuredModel = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+    return [
+      KNOWN_MODELS["gpt-4o-mini"],
+      KNOWN_MODELS["gpt-4o"],
+    ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
 
+  return [];
+}
+
+/** 根据模型 ID 获取友好信息 */
+function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyModelInfo {
+  // 先查注册表
+  if (KNOWN_MODELS[model]) {
+    return { ...KNOWN_MODELS[model], id: model };
+  }
+
+  // 模糊匹配
+  const lower = model.toLowerCase();
+  if (provider === "doubao") {
+    if (lower.includes("deepseek")) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
+    if (lower.includes("doubao")) return { ...KNOWN_MODELS["doubao-seed-2-0-lite-260215"], id: model };
+  }
+
+  // 兜底
   return {
-    displayName: "基础模板",
-    description: "基于学校资料本地生成，不依赖外部 AI，作为兜底方案。",
-    strengths: ["基础覆盖", "离线可用", "零成本"]
+    id: model,
+    displayName: model,
+    description: "当前使用的 AI 模型。",
+    strengths: ["内容生成"]
   };
 }
 
@@ -85,6 +142,7 @@ export function getAiProviderStatus(): AiProviderStatus {
       label: "豆包 / 火山方舟",
       configured: Boolean(apiKey),
       model,
+      models: getAvailableModels(),
       friendly: getFriendlyModelInfo(model, provider)
     };
   }
@@ -96,6 +154,7 @@ export function getAiProviderStatus(): AiProviderStatus {
       label: "OpenAI",
       configured: Boolean(process.env.OPENAI_API_KEY),
       model,
+      models: getAvailableModels(),
       friendly: getFriendlyModelInfo(model, provider)
     };
   }
@@ -105,14 +164,16 @@ export function getAiProviderStatus(): AiProviderStatus {
     label: "本地模板",
     configured: true,
     model: "template",
+    models: getAvailableModels(),
     friendly: getFriendlyModelInfo("template", provider)
   };
 }
 
 export async function generateCampusContent(
-  context: GenerationContext
+  context: GenerationContext,
+  modelOverride?: string
 ): Promise<GeneratedOutput> {
-  const provider = getChatCompletionProvider();
+  const provider = getChatCompletionProvider(modelOverride);
 
   if (!provider) {
     return generateFallbackContent(context);
@@ -153,7 +214,7 @@ function normalizeChatEndpoint(baseUrl: string) {
   return `${trimmed}/chat/completions`;
 }
 
-function getChatCompletionProvider(): ChatCompletionProvider | null {
+function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvider | null {
   const provider = resolveAiProvider();
 
   if (provider === "template") {
@@ -167,6 +228,8 @@ function getChatCompletionProvider(): ChatCompletionProvider | null {
       throw new Error("豆包 API Key 未配置。请在 Vercel 环境变量中设置 DOUBAO_API_KEY 或 ARK_API_KEY。");
     }
 
+    const model = modelOverride || process.env.DOUBAO_MODEL || "doubao-seed-2-0-lite-260215";
+
     return {
       provider,
       label: "豆包 / 火山方舟",
@@ -174,7 +237,7 @@ function getChatCompletionProvider(): ChatCompletionProvider | null {
       endpoint: normalizeChatEndpoint(
         process.env.DOUBAO_BASE_URL ?? "https://ark.cn-beijing.volces.com/api/v3"
       ),
-      model: process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215",
+      model,
       maxTokensField: "max_completion_tokens",
       supportsJsonMode: false
     };
@@ -184,12 +247,14 @@ function getChatCompletionProvider(): ChatCompletionProvider | null {
     throw new Error("OpenAI API Key 未配置。请设置 OPENAI_API_KEY，或把 AI_PROVIDER 改为 doubao/template。");
   }
 
+  const model = modelOverride || process.env.OPENAI_MODEL || "gpt-4o-mini";
+
   return {
     provider,
     label: "OpenAI",
     apiKey: process.env.OPENAI_API_KEY,
     endpoint: normalizeChatEndpoint(process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"),
-    model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    model,
     maxTokensField: "max_tokens",
     supportsJsonMode: true
   };

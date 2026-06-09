@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Loader2, Save, WandSparkles } from "lucide-react";
+import { AlertCircle, Brain, CheckCircle2, Loader2, Save, Sparkles, WandSparkles, Zap } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { ContentOutput } from "@/components/content-output";
 import { RiskAlert } from "@/components/risk-alert";
 import { contentGoals, contentTypes, mvpPlatforms, toneStyles } from "@/lib/constants";
-import type { AiProviderStatus } from "@/lib/content-generator";
+import type { AiProviderStatus, FriendlyModelInfo } from "@/lib/content-generator";
 import type {
   GeneratePayload,
   GeneratedOutput,
@@ -21,6 +21,8 @@ type GenerationState = {
   riskHits: RiskHit[];
 };
 
+const defaultModel = "doubao-seed-2-0-lite-260215";
+
 export function GenerateClient({
   aiStatus,
   schools
@@ -29,12 +31,15 @@ export function GenerateClient({
   schools: SchoolRecord[];
 }) {
   const router = useRouter();
+  const models = aiStatus.models.length > 0 ? aiStatus.models : [];
+  const [selectedModel, setSelectedModel] = useState(models[0]?.id ?? defaultModel);
   const [payload, setPayload] = useState<GeneratePayload>({
     schoolId: schools[0]?.id ?? "",
     platform: "小红书",
     contentType: "新生避坑",
     contentGoal: "私信咨询",
-    tone: "真实学长学姐口吻"
+    tone: "真实学长学姐口吻",
+    model: models[0]?.id ?? defaultModel,
   });
   const [result, setResult] = useState<GenerationState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +52,16 @@ export function GenerateClient({
     [schools, payload.schoolId]
   );
 
+  const currentModelInfo = useMemo(
+    () => models.find(m => m.id === selectedModel),
+    [models, selectedModel]
+  );
+
+  function handleModelChange(modelId: string) {
+    setSelectedModel(modelId);
+    setPayload((current) => ({ ...current, model: modelId }));
+  }
+
   async function generate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -56,7 +71,7 @@ export function GenerateClient({
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ ...payload, model: selectedModel })
     });
 
     setLoading(false);
@@ -73,7 +88,7 @@ export function GenerateClient({
       riskHits: RiskHit[];
     };
     setResult({
-      payload: { ...payload },
+      payload: { ...payload, model: selectedModel },
       output: data.output,
       riskHits: data.riskHits
     });
@@ -114,9 +129,32 @@ export function GenerateClient({
 
   return (
     <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
-      <section className="panel p-4">
-        <h2 className="text-sm font-semibold text-ink">生成参数</h2>
+      <section className="panel p-5">
+        <h2 className="text-sm font-bold text-ink">生成参数</h2>
         <AiStatusBanner status={aiStatus} />
+
+        {/* ── 模型选择器 ── */}
+        {models.length > 1 ? (
+          <div className="mt-4 rounded-xl border border-line/60 bg-canvas-alt/40 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain size={15} className="text-brand-500" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-light">
+                选择创作引擎
+              </span>
+            </div>
+            <div className="grid gap-2">
+              {models.map((model) => (
+                <ModelOption
+                  key={model.id}
+                  model={model}
+                  selected={selectedModel === model.id}
+                  onSelect={handleModelChange}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <form className="mt-4 space-y-4" onSubmit={generate}>
           <label className="block">
             <span className="form-label">学校</span>
@@ -216,8 +254,9 @@ export function GenerateClient({
           </div>
 
           {selectedSchool ? (
-            <div className="rounded-md border border-line bg-canvas p-3 text-sm leading-6 text-muted">
-              当前资料：{selectedSchool.city} ·{" "}
+            <div className="rounded-lg border border-line/60 bg-canvas-alt/40 p-3 text-sm leading-6 text-muted">
+              <span className="text-xs font-semibold text-muted-light">学校资料预览 · </span>
+              {selectedSchool.city} ·{" "}
               {selectedSchool.dormitory_info || selectedSchool.registration_notes || "资料较少，建议先补充学校信息"}
             </div>
           ) : null}
@@ -225,9 +264,9 @@ export function GenerateClient({
           {message ? (
             <div
               className={[
-                "rounded-md border px-3 py-2 text-sm",
+                "rounded-lg border px-4 py-2.5 text-[13px] font-medium",
                 messageType === "error"
-                  ? "border-coral-500/30 bg-coral-50 text-coral-600"
+                  ? "border-coral-100 bg-coral-50/70 text-coral-600"
                   : "border-line bg-white text-muted"
               ].join(" ")}
             >
@@ -236,8 +275,14 @@ export function GenerateClient({
           ) : null}
 
           <button className="button-primary w-full" disabled={loading} type="submit">
-            {loading ? <Loader2 className="animate-spin" size={16} /> : <WandSparkles size={16} />}
-            生成内容
+            {loading ? (
+              <Loader2 className="animate-spin" size={17} />
+            ) : (
+              <>
+                <WandSparkles size={17} />
+                使用 {currentModelInfo?.displayName ?? "AI"} 生成
+              </>
+            )}
           </button>
         </form>
       </section>
@@ -255,12 +300,12 @@ export function GenerateClient({
         ) : (
           <div className="panel flex min-h-[420px] items-center justify-center p-8 text-center">
             <div>
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                <WandSparkles size={22} />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600">
+                <WandSparkles size={26} />
               </div>
-              <h2 className="mt-3 text-sm font-semibold text-ink">等待生成</h2>
-              <p className="mt-1 max-w-sm text-sm leading-6 text-muted">
-                左侧选择学校和内容参数后，生成结果会显示在这里，便于复制发布。
+              <h2 className="mt-4 text-[15px] font-semibold text-ink">等待生成</h2>
+              <p className="mt-1.5 max-w-sm text-[13px] leading-6 text-muted">
+                左侧选择学校、创作引擎和内容参数后，生成结果会显示在这里，便于复制发布。
               </p>
             </div>
           </div>
@@ -270,37 +315,87 @@ export function GenerateClient({
   );
 }
 
+/** ── 模型选项卡片 ── */
+function ModelOption({
+  model,
+  selected,
+  onSelect
+}: {
+  model: FriendlyModelInfo;
+  selected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(model.id)}
+      className={`w-full rounded-lg border p-3 text-left transition-all duration-200 ${
+        selected
+          ? "border-brand-200 bg-brand-50/70 ring-1 ring-brand-100 shadow-sm"
+          : "border-line/60 bg-white hover:border-brand-100 hover:bg-brand-50/30"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            selected ? "bg-brand-100 text-brand-700" : "bg-canvas-alt text-muted-light"
+          }`}
+        >
+          {model.id.includes("deepseek") ? (
+            <Zap size={18} />
+          ) : model.id.includes("template") ? (
+            <AlertCircle size={18} />
+          ) : (
+            <Sparkles size={18} />
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="text-[13px] font-semibold text-ink">{model.displayName}</h4>
+            {selected ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+                <CheckCircle2 size={10} />
+                使用中
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-0.5 text-[11px] leading-5 text-muted-light line-clamp-2">
+            {model.description}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function AiStatusBanner({ status }: { status: AiProviderStatus }) {
   const isTemplate = status.provider === "template";
   const isReady = !isTemplate && status.configured;
   const Icon = isReady ? CheckCircle2 : AlertCircle;
 
-  return (
-    <div
-      className={[
-        "mt-3 rounded-md border px-3 py-2 text-sm",
-        isReady
-          ? "border-brand-100 bg-brand-50 text-brand-800"
-          : "border-coral-500/30 bg-coral-50 text-coral-600"
-      ].join(" ")}
-    >
-      <div className="flex items-start gap-2">
-        <Icon className="mt-0.5 shrink-0" size={16} />
-        <div className="min-w-0">
-          <p className="font-medium">
-            {isReady
-              ? `${status.friendly.displayName} · 已激活`
-              : isTemplate
-                ? "当前使用本地模板"
-                : "AI 引擎未配置"}
-          </p>
-          <p className="mt-1 leading-5">
-            {isReady
-              ? status.friendly.description
-              : "要生成更真实、不重复的内容，请在 Vercel 环境变量中配置豆包 API Key 后重新部署。"}
-          </p>
+  if (isTemplate) {
+    return (
+      <div className="mt-3 rounded-lg border border-coral-100 bg-coral-50/70 px-4 py-2.5 text-[13px] font-medium text-coral-600">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="mt-0.5 shrink-0" size={16} />
+          <div>
+            <p className="font-semibold">AI 引擎未配置</p>
+            <p className="mt-0.5 text-coral-500/80">
+              在 Vercel 环境变量中配置 DOUBAO_API_KEY 后重新部署即可激活。
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <div className="mt-3 rounded-lg border border-coral-100 bg-coral-50/70 px-4 py-2.5 text-[13px] font-medium text-coral-600">
+        AI 引擎密钥未配置
+      </div>
+    );
+  }
+
+  return null;
 }

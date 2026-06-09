@@ -132,4 +132,5 @@ export type GeneratePayload = {
   contentType: string;
   contentGoal: string;
   tone: string;
+  model?: string;
 };

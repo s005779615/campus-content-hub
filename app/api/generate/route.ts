@@ -39,10 +39,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "School not found or forbidden" }, { status: 404 });
     }
 
-    const output = await generateCampusContent({
-      ...body,
-      school
-    });
+    const output = await generateCampusContent(
+      {
+        ...body,
+        school
+      },
+      body.model
+    );
     const riskHits = auditRiskTerms(output, school.banned_phrases);
 
     return NextResponse.json({ output, riskHits });
