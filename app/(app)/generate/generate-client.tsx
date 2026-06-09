@@ -371,7 +371,6 @@ function ModelOption({
 function AiStatusBanner({ status }: { status: AiProviderStatus }) {
   const isTemplate = status.provider === "template";
   const isReady = !isTemplate && status.configured;
-  const Icon = isReady ? CheckCircle2 : AlertCircle;
 
   if (isTemplate) {
     return (
