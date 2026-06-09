@@ -287,34 +287,112 @@ function parseGeneratedJson(content: string, providerLabel: string) {
 
 function buildPrompt(context: GenerationContext) {
   const { school, platform, contentType, contentGoal, tone } = context;
-  const variationAngles = [
-    "先讲新生最容易踩的坑，再给清单",
-    "先从宿舍和到校当天的真实场景切入",
-    "先用一个反常识提醒开头，再给行动建议",
-    "先按时间线写报到前、报到当天、入住后",
-    "先用评论区常见问题的口吻组织内容"
+
+  // ---- 结构差异化角度：每次随机选一个，保证不同次生成的内容结构不同 ----
+  const structureAngles = [
+    `「避坑先行」——先用 2-3 个新生最容易踩的坑开场，再按场景给具体建议，最后落到私信/咨询`,
+    `「一天时间线」——按报到当天的时间顺序写：早上到校→中午办手续→下午收拾宿舍→晚上周边吃饭，每个节点给一条实用提醒`,
+    `「清单体+场景点评」——把内容组织成清单，但每条清单后面跟一句「实际感受」（比如「宿舍看着大，塞完东西才发现小」）`,
+    `「Q&A 答疑体」——模拟新生私信问得最多的 4-5 个问题，用学长学姐口吻一一回答，最后引导继续提问`,
+    `「对比体」——用「来之前以为……实际上……」的对比结构写 3-4 组反差，打破新生对大学生活的想象偏差`,
+    `「宿舍卧谈会」——像宿舍晚上聊天一样，从闲聊切入，把实用信息夹在真实对话感里`,
+    `「数据+体感」——每条建议配一个模糊数字（「大概 7 成新生都会忽略……」「食堂有 20 多个窗口但只有 3 家撑到晚上」），增加真实感`,
+    `「单品深扒」——不写泛泛清单，而是盯住 1-2 个具体品类（比如床品尺寸/校园卡套餐）深挖对比，其余一笔带过`,
   ];
-  const variationAngle =
-    variationAngles[Math.floor(Math.random() * variationAngles.length)] ?? variationAngles[0];
+  const structureAngle =
+    structureAngles[Math.floor(Math.random() * structureAngles.length)] ?? structureAngles[0];
 
-  const schoolFacts = [
-    ["学校名称", school.name],
-    ["校区", school.campus_name],
+  // ---- 内容类型专属切入点：让同类型内容每次也有不同侧重 ----
+  const contentTypeAngles: Record<string, string[]> = {
+    "宿舍攻略": [
+      "重点写宿舍空间利用和收纳，不写泛泛的「宿舍好物」",
+      "从床位尺寸和楼栋差异切入，提醒新生先确认再买",
+      "写室友相处和作息协调，生活向而非物品向"
+    ],
+    "开学清单": [
+      "按「一定带/到了再买/千万别买」三类分组，不写平铺清单",
+      "从报到当天背包出发，只写 24 小时内会用到的东西",
+      "军训、上课、宿舍三类场景各列 5 件，不混在一起"
+    ],
+    "校园周边": [
+      "画一个「以校门为圆心步行 15 分钟」的生活圈地图感",
+      "重点写快递点、打印店、药店这些新生容易忽略的刚需点位",
+      "对比学校周边和市区商圈，告诉新生什么在周边解决什么去市区"
+    ],
+    "食堂测评": [
+      "按「早餐/午餐/夜宵」分时段推荐窗口，不写笼统的「好吃」",
+      "给每个推荐窗口写一句「老生才知道」的隐藏信息",
+      "写省钱吃法：哪个窗口量大、哪个时间段打折"
+    ],
+    "新生避坑": [
+      "按「报到坑/宿舍坑/消费坑/信息坑」分类，每类 2-3 条",
+      "每条坑配一个「怎么避」的具体动作，不光吐槽",
+      "从高年级生视角写「当年我踩过的坑」，故事感优先"
+    ],
+    "校园卡": [
+      "对比不同运营商在本校的实际信号和网速，不推荐具体品牌但可以写「建议到校实测」",
+      "写办卡时机：什么时候办划算、什么时候容易踩坑",
+      "把校园卡和宽带、宿舍 Wi-Fi 放在一起写，做整体通信建议"
+    ],
+    "被子床品": [
+      "重点写尺寸匹配：不同楼栋/床型可能需要不同尺寸，提醒先确认",
+      "写材质和季节匹配：南方/北方、有无暖气对厚度和材质的影响",
+      "写购买渠道对比：网购、学校周边、家里寄，各自的优缺点"
+    ],
+    "军训用品": [
+      "按「防晒/鞋垫/补水/急救」四类写，每类只推 1-2 个真正有用的",
+      "写军训一天的真实时间线，根据每个时段推荐对应用品",
+      "重点写「大多数人不知道但很有用」的冷门好物，不写网上抄烂的清单"
+    ],
+    "学长学姐建议": [
+      "按「学习/生活/社交/花钱」四个维度各给 2 条建议，角度全面",
+      "用「大一上 vs 大一下」的时间对比写建议，体现成长感",
+      "收集不同专业/学院学长学姐的各一条建议，做拼盘体"
+    ]
+  };
+  const angles = contentTypeAngles[contentType] ?? [
+    `围绕「${contentType}」从新生最关心的 3 个问题切入`,
+    `用真实经历故事开场，自然过渡到${contentType}建议`,
+  ];
+  const contentTypeAngle = angles[Math.floor(Math.random() * angles.length)] ?? angles[0];
+
+  // ---- 学校资料按场景分组，让 AI 更容易按需引用 ----
+  const lifeFacts = [
+    ["学校", [school.name, school.campus_name].filter(Boolean).join(" ")],
     ["城市", school.city],
-    ["宿舍情况", school.dormitory_info],
-    ["食堂情况", school.cafeteria_info],
-    ["周边美食", school.nearby_food],
-    ["周边娱乐", school.nearby_fun],
-    ["新生报到注意事项", school.registration_notes],
-    ["开学必备用品", school.essentials],
-    ["校园卡办理注意事项", school.campus_card_notes],
-    ["被子/床品需求场景", school.bedding_scenarios],
-    ["常见新生问题", school.freshman_faq]
-  ]
-    .filter(([, value]) => Boolean(value))
-    .map(([key, value]) => `${key}：${value}`)
-    .join("\n");
+    ["宿舍", school.dormitory_info],
+    ["食堂", school.cafeteria_info],
+  ].filter(([, v]) => Boolean(v));
 
+  const nearbyFacts = [
+    ["周边美食", school.nearby_food],
+    ["周边娱乐/生活配套", school.nearby_fun],
+  ].filter(([, v]) => Boolean(v));
+
+  const prepFacts = [
+    ["报到注意事项", school.registration_notes],
+    ["开学必备用品", school.essentials],
+    ["校园卡信息", school.campus_card_notes],
+    ["床品/被子信息", school.bedding_scenarios],
+  ].filter(([, v]) => Boolean(v));
+
+  const extraFacts = [
+    ["常见新生问题", school.freshman_faq],
+  ].filter(([, v]) => Boolean(v));
+
+  function formatFacts(label: string, facts: (string | null)[][]) {
+    if (!facts.length) return "";
+    return `【${label}】\n${facts.map(([k, v]) => `· ${k}：${v}`).join("\n")}`;
+  }
+
+  const schoolFactsBlock = [
+    formatFacts("校园生活", lifeFacts),
+    formatFacts("周边环境", nearbyFacts),
+    formatFacts("开学准备", prepFacts),
+    formatFacts("补充信息", extraFacts),
+  ].filter(Boolean).join("\n\n");
+
+  // ---- 平台专属格式 ----
   const format =
     platform === "小红书"
       ? `JSON 字段：titles(5个字符串)、coverText、body、imageIdeas(6个字符串)、tags(10个字符串)、commentGuide、dmGuide。`
@@ -322,24 +400,36 @@ function buildPrompt(context: GenerationContext) {
         ? `JSON 字段：hook3s、script15s、script30s、storyboard(分镜数组)、shootingIdeas(拍摄建议数组)、subtitles(字幕数组)、publishTitle、commentGuide。`
         : `JSON 字段：videoTitle、videoBody、momentsCopy、privateGuide。`;
 
+  // ---- 语气风格具体化 ----
+  const toneGuide: Record<string, string> = {
+    "真实学长学姐口吻": "像在食堂跟学弟学妹边吃边聊，可以加一句「我们当时就是……」这类真实经历，但不要过度煽情",
+    "避坑攻略口吻": "每条建议都是「坑+避法」结构，语气可以带一点过来人的无奈和提醒，但不贩卖焦虑",
+    "生活分享口吻": "轻松日常，像发朋友圈分享生活，可以出现「我个人觉得」「我比较喜欢」这类主观表达",
+    "强转化口吻": "在提供实用信息的同时自然引导私信/咨询，转化点要软、要有信息差价值（「我整理了一份对比表，需要的私信我」），不能硬推销",
+  };
+  const toneInstruction = toneGuide[tone] ?? "自然、真诚、像真人学长学姐在分享，不是 AI 在写说明书";
+
   return `${safetyInstruction(school.banned_phrases)}
 
 请为以下校园账号生成 ${platform} 内容。
 内容类型：${contentType}
 内容目标：${contentGoal}
-语气风格：${tone}
-本次差异化角度：${variationAngle}
+语气风格：${tone}（${toneInstruction}）
+
+★ 本次结构策略：${structureAngle}
+★ 本次内容侧重：${contentTypeAngle}
 
 学校资料：
-${schoolFacts}
+${schoolFactsBlock}
 
 ${format}
+
 内容质量要求：
-1. 必须像真实学长学姐经验，避免空话、套话和重复句式。
-2. 尽量引用学校资料中的宿舍、食堂、周边、报到、校园卡、床品信息；资料没有写的地方要用“建议提前确认”，不要编造事实。
-3. 标题和脚本角度要彼此不同，至少覆盖避坑、清单、校区生活、私信咨询、转化引导中的多个角度。
-4. 涉及校园卡、床品、开学用品时，只能写“按个人需要了解”“对比资费/尺寸/配送/售后”“以实际规则为准”，不能写官方指定、必须办理、内部渠道、保证通过。
-5. 输出必须是纯 JSON 对象，字段名严格按上面的格式，不要输出 Markdown、解释文字或代码块。`;
+1. 真实感优先：必须像真人学长学姐在分享经验，避免「首先……其次……最后……」的论文腔和「众所周知」「值得一提的是」等 AI 套话。句子长短交错，口语化但不随意。
+2. 紧扣资料：尽可能引用上面学校资料中的具体信息（宿舍条件、食堂窗口、周边店铺、报到细节）。资料没有覆盖的地方写「建议到校后确认」「可以提前问学长学姐」，绝不编造事实。
+3. 标题多样性：${platform === "小红书" ? "5 个标题角度要互不相同，覆盖情绪共鸣、信息增量、好奇心缺口、避坑提醒、清单导览中的至少 3 个方向。" : "标题要具体，包含学校名和内容类型的组合，不做标题党。"}
+4. 合规底线：涉及校园卡、床品、开学用品时，只能使用「按个人需要了解」「对比资费/尺寸/配送/售后」「以实际规则为准」「建议提前问清楚」等中性表达，严禁出现「官方指定」「必须办理」「不办影响入学」「内部渠道」「保证通过」。
+5. 输出格式：纯 JSON 对象，不要 Markdown 代码块、不要解释文字。字段名严格按上面给出的名称。每个字段都必须有内容，数组字段不能为空数组。`;
 }
 
 function generateFallbackContent(context: GenerationContext): GeneratedOutput {
@@ -393,7 +483,7 @@ function generateXiaohongshu(context: GenerationContext): XiaohongshuOutput {
       "新生避坑",
       contentGoal === "成交转化" ? "开学准备" : "大学新生"
     ],
-    commentGuide: `评论区可以留“${school.name}+校区”，我按大家问得多的点继续整理。`,
+    commentGuide: `评论区可以留"${school.name}+校区"，我按大家问得多的点继续整理。`,
     dmGuide:
       tone === "强转化口吻"
         ? "需要开学用品/床品/校园卡信息的同学，可以私信我说一下校区和需求，我发你整理好的对比清单。"
@@ -420,7 +510,7 @@ function generateDouyin(context: GenerationContext): DouyinOutput {
       "优先竖屏手持，画面真实，不要过度包装",
       "用校园门口、食堂、宿舍楼外景做转场",
       "表格镜头停留 1-2 秒，方便观众截图",
-      "涉及办理和购买时，用“按个人需要了解”表达"
+      "涉及办理和购买时，用「按个人需要了解」表达"
     ],
     subtitles: [
       `${school.name}新生先收藏`,
@@ -433,7 +523,7 @@ function generateDouyin(context: GenerationContext): DouyinOutput {
       tone === "避坑攻略口吻"
         ? `${school.name}新生避坑：${contentType}别急着乱准备`
         : `${school.name}新生${contentType}，学长学姐经验版`,
-    commentGuide: "评论区发“学校+校区”，下一条按校区继续整理。"
+    commentGuide: "评论区发「学校+校区」，下一条按校区继续整理。"
   };
 }
 
