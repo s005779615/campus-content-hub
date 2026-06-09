@@ -54,12 +54,6 @@ const KNOWN_MODELS: Record<string, FriendlyModelInfo> = {
     description: "快节奏校园攻略生成，擅长开学必备清单、宿舍探店测评、小红书种草风格。适合日常高频更新和视觉化内容创意。",
     strengths: ["开学季攻略", "宿舍好物清单", "食堂探店测评", "小红书种草文", "校园周边指南"]
   },
-  "doubao-seed-2-0-260215": {
-    id: "doubao-seed-2-0-260215",
-    displayName: "校园灵感版 Pro",
-    description: "豆包旗舰模型，更强的内容创作能力，适合对质量要求更高的深度长文和系列策划。",
-    strengths: ["深度长文", "系列策划", "复杂场景", "更高一致性", "品牌调性把控"]
-  },
   "gpt-4o-mini": {
     id: "gpt-4o-mini",
     displayName: "通用创作版",
@@ -93,7 +87,6 @@ export function getAvailableModels(): FriendlyModelInfo[] {
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
       KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
-      KNOWN_MODELS["doubao-seed-2-0-260215"],
     ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
 
