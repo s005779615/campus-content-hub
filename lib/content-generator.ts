@@ -287,18 +287,32 @@ async function generateWithChatCompletions(
     body.thinking = { type: "enabled" };
   }
 
-  const response = await fetch(provider.endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.apiKey}`
-    },
-    body: JSON.stringify(body)
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 秒超时
+
+  let response: Response;
+  try {
+    response = await fetch(provider.endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${provider.apiKey}`
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+    const reason = fetchError instanceof Error ? fetchError.message : "unknown";
+    throw new Error(
+      `${provider.label} 网络请求失败（${reason}）。端点：${provider.endpoint.replace(/\/chat\/completions$/, "/...")}`
+    );
+  }
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`${provider.label} 调用失败：${response.status}${detail ? ` ${detail.slice(0, 160)}` : ""}`);
+    throw new Error(`${provider.label} 调用失败：${response.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`);
   }
 
   const data = (await response.json()) as {
