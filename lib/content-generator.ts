@@ -86,7 +86,6 @@ export function getAvailableModels(): FriendlyModelInfo[] {
     const configuredModel = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215";
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
-      KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
     ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
 
