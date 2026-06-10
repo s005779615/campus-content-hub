@@ -15,7 +15,7 @@ export async function getAuthContext() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id,email,full_name,role,created_at")
+    .select("id,email,full_name,avatar_url,role,created_at")
     .eq("id", user.id)
     .single<Profile>();
 
