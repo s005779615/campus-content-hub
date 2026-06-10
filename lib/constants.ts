@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   School,
   Settings,
+  Smartphone,
   UsersRound,
   WandSparkles
 } from "lucide-react";
@@ -55,6 +56,7 @@ type NavHref =
   | "/schools"
   | "/team"
   | "/generate"
+  | "/accounts"
   | "/library"
   | "/tasks"
   | "/analytics"
@@ -72,6 +74,7 @@ export const navItems = [
   { href: "/schools", label: "学校", icon: School },
   { href: "/team", label: "队员", icon: UsersRound, adminOnly: true },
   { href: "/generate", label: "生成", icon: WandSparkles },
+  { href: "/accounts", label: "账号", icon: Smartphone },
   { href: "/library", label: "内容库", icon: FileText },
   { href: "/tasks", label: "任务", icon: CalendarDays },
   { href: "/analytics", label: "看板", icon: BarChart3 },

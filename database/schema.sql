@@ -24,6 +24,20 @@ as $$
   );
 $$;
 
+create table if not exists public.platform_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  school_id uuid not null references public.schools(id) on delete cascade,
+  platform text not null check (platform in ('抖音', '小红书')),
+  account_name text not null,
+  account_id text,
+  account_link text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(user_id, school_id, platform)
+);
+
 create table if not exists public.schools (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -330,6 +344,33 @@ for update
 to authenticated
 using (public.is_admin() or user_id = auth.uid())
 with check (public.is_admin() or user_id = auth.uid());
+
+alter table public.platform_accounts enable row level security;
+
+create policy "accounts_select_own_or_admin"
+on public.platform_accounts
+for select
+to authenticated
+using (public.is_admin() or user_id = auth.uid());
+
+create policy "accounts_insert_own"
+on public.platform_accounts
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+create policy "accounts_update_own"
+on public.platform_accounts
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+create policy "accounts_delete_own"
+on public.platform_accounts
+for delete
+to authenticated
+using (user_id = auth.uid());
 
 -- After creating the first admin account in Supabase Auth, run:
 -- update public.profiles set role = 'admin' where email = 'your-admin-email@example.com';
