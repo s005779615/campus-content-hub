@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   return (
     <>
       {/* ── 欢迎区 ── */}
-      <div className="mb-6 rounded-2xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-800 p-6 text-white shadow-elevated sm:p-8">
+      <div className="mb-6 rounded-2xl bg-gradient-to-br from-brand-800 via-brand-900 to-black p-6 text-white shadow-elevated sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-brand-100">

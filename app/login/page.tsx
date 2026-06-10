@@ -26,7 +26,7 @@ export default async function LoginPage() {
       <section className="flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[380px]">
           <div className="mb-10">
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-bold text-white shadow-md shadow-brand-200/40">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-ink to-brand-700 text-lg font-bold text-white shadow-md shadow-brand-200/40">
               校
             </div>
             <h1 className="text-[26px] font-bold tracking-heading text-ink">{appName}</h1>
@@ -39,7 +39,7 @@ export default async function LoginPage() {
       </section>
 
       {/* Right: Hero — 简洁克制 */}
-      <section className="hidden border-l border-line/40 bg-gradient-to-br from-white via-white to-brand-50/30 p-16 lg:flex lg:items-center">
+      <section className="hidden border-l border-line/40 bg-gradient-to-br from-white via-white to-canvas-alt p-16 lg:flex lg:items-center">
         <div className="mx-auto max-w-md">
           <span className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-white px-4 py-1.5 text-xs font-medium text-muted shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
@@ -48,7 +48,7 @@ export default async function LoginPage() {
           <h2 className="mt-6 text-[40px] font-bold leading-[1.15] tracking-tightest text-ink">
             用真实的
             <br />
-            <span className="text-brand-600">学长学姐视角</span>
+            <span className="text-ink font-extrabold">学长学姐视角</span>
             <br />
             讲好每个学校
           </h2>

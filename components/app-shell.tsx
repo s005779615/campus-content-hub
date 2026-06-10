@@ -49,7 +49,7 @@ export function AppShell({
                   <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
                 </span>
               ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
                   校
                 </span>
               )}
@@ -143,7 +143,7 @@ export function AppShell({
                       <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
                     </span>
                   ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-ink to-brand-700 text-sm font-bold text-white">
                       校
                     </span>
                   )}

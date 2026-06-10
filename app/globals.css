@@ -89,7 +89,7 @@ button:disabled {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #10b981, #34d399, #a7f3d0);
+  background: linear-gradient(90deg, #171717, #525252, #d4d4d4);
   border-radius: 8px 8px 0 0;
 }
 
