@@ -234,7 +234,7 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
       throw new Error("豆包 API Key 未配置。请在 Vercel 环境变量中设置 DOUBAO_API_KEY 或 ARK_API_KEY。");
     }
 
-    const model = modelOverride || process.env.DOUBAO_MODEL || "doubao-seed-2-0-lite-260215";
+    const model = modelOverride || process.env.DOUBAO_MODEL || "deepseek-v4-flash";
 
     return {
       provider,

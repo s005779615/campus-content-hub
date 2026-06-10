@@ -32,14 +32,14 @@ export function GenerateClient({
 }) {
   const router = useRouter();
   const models = aiStatus.models.length > 0 ? aiStatus.models : [];
-  const [selectedModel, setSelectedModel] = useState(models[0]?.id ?? defaultModel);
+  const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [payload, setPayload] = useState<GeneratePayload>({
     schoolId: schools[0]?.id ?? "",
     platform: "小红书",
     contentType: "新生避坑",
     contentGoal: "私信咨询",
     tone: "真实学长学姐口吻",
-    model: models[0]?.id ?? defaultModel,
+    model: defaultModel,
   });
   const [result, setResult] = useState<GenerationState | null>(null);
   const [loading, setLoading] = useState(false);
