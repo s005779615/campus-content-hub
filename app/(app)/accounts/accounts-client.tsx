@@ -12,6 +12,7 @@ type Account = {
   school_id: string;
   account_name: string;
   account_id?: string;
+  account_password?: string;
   account_link?: string;
   notes?: string;
   schools?: { name: string; campus_name: string | null };
@@ -41,6 +42,7 @@ export function AccountsClient({ schools }: { schools: SchoolRecord[] }) {
       platform: String(form.get("platform")),
       account_name: String(form.get("account_name")),
       account_id: String(form.get("account_id") || ""),
+      account_password: String(form.get("account_password") || ""),
       account_link: String(form.get("account_link") || ""),
       notes: String(form.get("notes") || ""),
     };
@@ -87,8 +89,12 @@ export function AccountsClient({ schools }: { schools: SchoolRecord[] }) {
             <input className="form-input mt-1" name="account_name" required placeholder="如：乌鲁木齐校园攻略" />
           </label>
           <label className="block">
-            <span className="form-label">账号 ID（选填）</span>
+            <span className="form-label">账号 ID</span>
             <input className="form-input mt-1" name="account_id" placeholder="抖音号/小红书号" />
+          </label>
+          <label className="block">
+            <span className="form-label">密码</span>
+            <input className="form-input mt-1" name="account_password" placeholder="登录密码" />
           </label>
           <label className="block">
             <span className="form-label">账号链接（选填）</span>
@@ -128,6 +134,18 @@ export function AccountsClient({ schools }: { schools: SchoolRecord[] }) {
                       {acc.schools?.campus_name ? ` · ${acc.schools.campus_name}` : ""}
                     </p>
                     {acc.account_id ? <p className="mt-1 text-[11px] text-muted-light">ID: {acc.account_id}</p> : null}
+                    {acc.account_password ? (
+                      <p className="mt-1 text-[11px] text-muted-light">
+                        密码: {acc.account_password}
+                        <button
+                          type="button"
+                          className="ml-1.5 text-brand-600 hover:underline"
+                          onClick={() => { navigator.clipboard.writeText(acc.account_password!); }}
+                        >
+                          复制
+                        </button>
+                      </p>
+                    ) : null}
                     {acc.account_link ? (
                       <a href={acc.account_link} target="_blank" className="mt-0.5 inline-block text-[11px] text-brand-600 hover:underline" rel="noreferrer">
                         查看主页 →

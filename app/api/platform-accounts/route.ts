@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { school_id, platform, account_name, account_id, account_link, notes } = body;
+  const { school_id, platform, account_name, account_id, account_password, account_link, notes } = body;
 
   if (!school_id || !platform || !account_name) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const { data, error } = await ctx.supabase
     .from("platform_accounts")
     .upsert(
-      { user_id: ctx.profile.id, school_id, platform, account_name, account_id, account_link, notes },
+      { user_id: ctx.profile.id, school_id, platform, account_name, account_id, account_password, account_link, notes },
       { onConflict: "user_id,school_id,platform" }
     )
     .select()

@@ -31,6 +31,7 @@ create table if not exists public.platform_accounts (
   platform text not null check (platform in ('抖音', '小红书')),
   account_name text not null,
   account_id text,
+  account_password text,
   account_link text,
   notes text,
   created_at timestamptz not null default now(),
