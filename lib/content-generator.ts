@@ -48,14 +48,14 @@ const KNOWN_MODELS: Record<string, FriendlyModelInfo> = {
     description: "DeepSeek V4 Pro，深度推理爆款选题，精准洞察新生行为偏好，生成高互动高转化内容。",
     strengths: ["平台算法机制", "新生人群洞察", "高转化文案", "爆款选题策划", "评论区互动引导"]
   },
-  "deepseek-v4-flash": {
-    id: "deepseek-v4-flash",
+  "deepseek-v4-flash-260425": {
+    id: "deepseek-v4-flash-260425",
     displayName: "极速版",
     description: "DeepSeek V4 Flash，快速生成校园攻略，适合日常高频更新的轻量级内容。",
     strengths: ["快速生成", "日常高频", "轻量攻略", "标题创作", "短文案"]
   },
-  "doubao-seed-2-0-lite": {
-    id: "doubao-seed-2-0-lite",
+  "doubao-seed-2-0-lite-260215": {
+    id: "doubao-seed-2-0-lite-260215",
     displayName: "校园灵感版",
     description: "豆包 Seed 2.0 Lite，擅长开学必备清单、宿舍探店测评、小红书种草风格。适合日常高频更新和视觉化内容创意。",
     strengths: ["开学季攻略", "宿舍好物清单", "食堂探店测评", "小红书种草文", "校园周边指南"]
@@ -92,8 +92,8 @@ export function getAvailableModels(): FriendlyModelInfo[] {
     const configuredModel = process.env.DOUBAO_MODEL ?? "deepseek-v4-pro-260425";
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
-      KNOWN_MODELS["deepseek-v4-flash"],
-      KNOWN_MODELS["doubao-seed-2-0-lite"],
+      KNOWN_MODELS["deepseek-v4-flash-260425"],
+      KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
     ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
 
@@ -119,8 +119,8 @@ function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyMode
   const lower = model.toLowerCase();
   if (provider === "doubao") {
     if (lower.includes("deepseek") && lower.includes("pro")) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
-    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-flash"], id: model };
-    if (lower.includes("doubao")) return { ...KNOWN_MODELS["doubao-seed-2-0-lite"], id: model };
+    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-flash-260425"], id: model };
+    if (lower.includes("doubao")) return { ...KNOWN_MODELS["doubao-seed-2-0-lite-260215"], id: model };
   }
 
   // 兜底
@@ -137,7 +137,7 @@ export function getAiProviderStatus(): AiProviderStatus {
 
   if (provider === "doubao") {
     const apiKey = getDoubaoApiKey();
-    const model = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite";
+    const model = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215";
     return {
       provider,
       label: "豆包 / 火山方舟",

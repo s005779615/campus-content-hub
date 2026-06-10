@@ -67,13 +67,13 @@ export function GenerateClient({
     // 强转化/避坑口吻 → DeepSeek Pro
     const deepTone = ["强转化口吻", "避坑攻略口吻"];
     // 小红书种草 → 豆包
-    if (platform === "小红书" && (campusLife.includes(contentType) || contentType === "军训用品")) return "doubao-seed-2-0-lite";
+    if (platform === "小红书" && (campusLife.includes(contentType) || contentType === "军训用品")) return "doubao-seed-2-0-lite-260215";
     // 深度内容 → DeepSeek Pro
     if (deepAnalysis.includes(contentType) || deepTone.includes(tone)) return "deepseek-v4-pro-260425";
     // 抖音/视频号 + 清单类 → 极速版
-    if ((platform === "抖音" || platform === "视频号") && ["军训用品", "校园卡", "被子床品"].includes(contentType)) return "deepseek-v4-flash";
+    if ((platform === "抖音" || platform === "视频号") && ["军训用品", "校园卡", "被子床品"].includes(contentType)) return "deepseek-v4-flash-260425";
     // 校园生活默认 → 豆包
-    if (campusLife.includes(contentType)) return "doubao-seed-2-0-lite";
+    if (campusLife.includes(contentType)) return "doubao-seed-2-0-lite-260215";
     // 其余 → DeepSeek Pro
     return "deepseek-v4-pro-260425";
   }, [payload.platform, payload.contentType, payload.tone]);
