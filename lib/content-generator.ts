@@ -92,7 +92,7 @@ export function getAvailableModels(): FriendlyModelInfo[] {
     const configuredModel = process.env.DOUBAO_MODEL ?? "deepseek-v4-pro-260425";
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
-      KNOWN_MODELS["deepseek-v4-pro-260425"],
+      KNOWN_MODELS["deepseek-v4-flash"],
       KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
     ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
@@ -119,7 +119,7 @@ function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyMode
   const lower = model.toLowerCase();
   if (provider === "doubao") {
     if (lower.includes("deepseek") && lower.includes("pro")) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
-    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
+    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-flash"], id: model };
     if (lower.includes("doubao")) return { ...KNOWN_MODELS["doubao-seed-2-0-lite-260215"], id: model };
   }
 
