@@ -38,33 +38,37 @@ export default async function LoginPage() {
         </div>
       </section>
 
-      {/* Right: Hero */}
-      <section className="hidden border-l border-line/50 bg-white p-12 lg:flex lg:items-center">
-        <div className="mx-auto max-w-lg">
-          <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-            非官方校园生活攻略号
+      {/* Right: Hero — 简洁克制 */}
+      <section className="hidden border-l border-line/40 bg-gradient-to-br from-white via-white to-brand-50/30 p-16 lg:flex lg:items-center">
+        <div className="mx-auto max-w-md">
+          <span className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-white px-4 py-1.5 text-xs font-medium text-muted shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+            校园内容运营平台
           </span>
-          <h2 className="mt-4 text-[38px] font-bold leading-tight tracking-tightest text-ink">
-            帮队员把学校资料
+          <h2 className="mt-6 text-[40px] font-bold leading-[1.15] tracking-tightest text-ink">
+            用真实的
             <br />
-            变成能发布的
+            <span className="text-brand-600">学长学姐视角</span>
             <br />
-            <span className="bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
-              校园内容
-            </span>
+            讲好每个学校
           </h2>
+          <p className="mt-6 max-w-sm text-[15px] leading-7 text-muted">
+            基于学校资料生成非官方校园攻略，自动审核内容风险，发布数据实时回传。
+          </p>
           <div className="mt-10 grid gap-3">
             {[
-              { icon: "🎓", text: "学长学姐视角，不冒充学校官方" },
-              { icon: "🛡️", text: "先审核风险词，再复制发布" },
-              { icon: "📊", text: "发布链接和数据回填，管理员统一看板" },
+              { num: "01", title: "以学校资料为基础", desc: "宿舍、食堂、周边，生成真实内容" },
+              { num: "02", title: "风险词自动审核", desc: "不冒充官方，不强制办理" },
+              { num: "03", title: "发布数据回传", desc: "播放、私信、成交，一目了然" },
             ].map((item) => (
-              <div
-                key={item.text}
-                className="flex items-center gap-3 rounded-xl border border-line/60 bg-canvas-alt/60 px-4 py-3.5 text-sm font-medium text-ink-soft"
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.text}
+              <div key={item.num} className="group flex gap-4 rounded-xl border border-transparent bg-white/80 px-4 py-3.5 transition-all hover:border-line/60 hover:bg-white hover:shadow-sm">
+                <span className="text-xs font-bold text-muted-lighter tabular-nums group-hover:text-brand-400 transition-colors">
+                  {item.num}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-ink">{item.title}</p>
+                  <p className="mt-0.5 text-xs text-muted">{item.desc}</p>
+                </div>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { Brain, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { requireAuth } from "@/lib/auth";
 import { riskTermSuggestions } from "@/lib/constants";
 import { getAiProviderStatus } from "@/lib/content-generator";
@@ -19,6 +20,9 @@ export default async function SettingsPage() {
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="panel p-5">
           <h2 className="text-sm font-bold text-ink">当前账号</h2>
+          <div className="mt-4 border-b border-line/50 pb-4">
+            <AvatarUpload url={profile.avatar_url ?? null} />
+          </div>
           <dl className="mt-4 space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg bg-canvas-alt/60 px-4 py-3">
               <dt className="text-[13px] text-muted-light">邮箱</dt>

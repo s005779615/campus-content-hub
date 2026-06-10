@@ -44,9 +44,15 @@ export function AppShell({
               <Menu size={20} />
             </button>
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
-                校
-              </span>
+              {profile.avatar_url ? (
+                <span className="h-9 w-9 overflow-hidden rounded-xl shadow-sm shadow-brand-200/50 ring-2 ring-brand-100">
+                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                </span>
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
+                  校
+                </span>
+              )}
               <span className="text-[15px] font-semibold tracking-tight text-ink">{appName}</span>
             </Link>
           </div>
@@ -132,9 +138,15 @@ export function AppShell({
             <aside className="absolute left-0 top-0 flex h-full w-[280px] flex-col bg-white shadow-nav">
               <div className="flex h-14 items-center justify-between border-b border-line px-4">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
-                    校
-                  </span>
+                  {profile.avatar_url ? (
+                    <span className="h-8 w-8 overflow-hidden rounded-lg ring-2 ring-brand-100">
+                      <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                    </span>
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
+                      校
+                    </span>
+                  )}
                   <span className="text-sm font-semibold">{appName}</span>
                 </div>
                 <button

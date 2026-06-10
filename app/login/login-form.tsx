@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Loader2, LogIn, Mail, Lock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -45,31 +45,25 @@ export function LoginForm() {
       <div className="space-y-4">
         <label className="block">
           <span className="form-label">邮箱</span>
-          <div className="relative mt-1">
-            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-lighter" />
-            <input
-              className="form-input pl-10"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="admin@example.com"
-            />
-          </div>
+          <input
+            className="form-input mt-1"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="admin@example.com"
+          />
         </label>
         <label className="block">
           <span className="form-label">密码</span>
-          <div className="relative mt-1">
-            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-lighter" />
-            <input
-              className="form-input pl-10"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="请输入密码"
-            />
-          </div>
+          <input
+            className="form-input mt-1"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="请输入密码"
+          />
         </label>
       </div>
 
@@ -83,10 +77,7 @@ export function LoginForm() {
         {loading ? (
           <Loader2 className="animate-spin" size={18} />
         ) : (
-          <>
-            <LogIn size={17} />
-            登录后台
-          </>
+          "登录"
         )}
       </button>
     </form>
