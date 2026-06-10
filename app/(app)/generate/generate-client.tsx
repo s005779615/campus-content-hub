@@ -21,7 +21,7 @@ type GenerationState = {
   riskHits: RiskHit[];
 };
 
-const defaultModel = "deepseek-v4-flash";
+const defaultModel = "deepseek-v4-pro-260425";
 
 export function GenerateClient({
   aiStatus,

@@ -54,12 +54,20 @@ function Section({
   );
 }
 
+function safeItem(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (typeof item === "object" && item !== null) {
+    return JSON.stringify(item).slice(0, 120);
+  }
+  return String(item ?? "");
+}
+
 function XiaohongshuView({ output }: { output: XiaohongshuOutput }) {
   return (
     <>
       <Section title="5 个标题">
         <ol className="list-decimal space-y-1 pl-5">
-          {output.titles?.map((title) => <li key={title}>{title}</li>)}
+          {output.titles?.map((title, i) => <li key={i}>{safeItem(title)}</li>)}
         </ol>
       </Section>
       <Section title="封面文案">
@@ -70,7 +78,7 @@ function XiaohongshuView({ output }: { output: XiaohongshuOutput }) {
       </Section>
       <Section title="6 张配图说明">
         <ul className="list-disc space-y-1 pl-5">
-          {output.imageIdeas?.map((idea) => <li key={idea}>{idea}</li>)}
+          {output.imageIdeas?.map((idea, i) => <li key={i}>{safeItem(idea)}</li>)}
         </ul>
       </Section>
       <Section title="10 个标签">
@@ -106,17 +114,17 @@ function DouyinView({ output }: { output: DouyinOutput }) {
       </Section>
       <Section title="分镜脚本">
         <ul className="list-disc space-y-1 pl-5">
-          {output.storyboard?.map((item) => <li key={item}>{item}</li>)}
+          {output.storyboard?.map((item, i) => <li key={i}>{safeItem(item)}</li>)}
         </ul>
       </Section>
       <Section title="拍摄画面建议">
         <ul className="list-disc space-y-1 pl-5">
-          {output.shootingIdeas?.map((item) => <li key={item}>{item}</li>)}
+          {output.shootingIdeas?.map((item, i) => <li key={i}>{safeItem(item)}</li>)}
         </ul>
       </Section>
       <Section title="屏幕字幕">
         <ul className="list-disc space-y-1 pl-5">
-          {output.subtitles?.map((item) => <li key={item}>{item}</li>)}
+          {output.subtitles?.map((item, i) => <li key={i}>{safeItem(item)}</li>)}
         </ul>
       </Section>
       <Section title="发布标题">

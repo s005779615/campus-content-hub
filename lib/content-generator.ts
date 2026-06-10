@@ -89,10 +89,10 @@ export function getAvailableModels(): FriendlyModelInfo[] {
 
   if (provider === "doubao") {
     // 豆包 provider 下，DeepSeek 和豆包模型都可用（同一火山方舟 API）
-    const configuredModel = process.env.DOUBAO_MODEL ?? "deepseek-v4-flash";
+    const configuredModel = process.env.DOUBAO_MODEL ?? "deepseek-v4-pro-260425";
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
-      KNOWN_MODELS["deepseek-v4-flash"],
+      KNOWN_MODELS["deepseek-v4-pro-260425"],
       KNOWN_MODELS["doubao-seed-2-0-lite-260215"],
     ].filter(Boolean).map(m => ({ ...m, isDefault: m.id === configuredModel }));
   }
@@ -119,7 +119,7 @@ function getFriendlyModelInfo(model: string, provider: AiProvider): FriendlyMode
   const lower = model.toLowerCase();
   if (provider === "doubao") {
     if (lower.includes("deepseek") && lower.includes("pro")) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
-    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-flash"], id: model };
+    if (lower.includes("deepseek") && (lower.includes("flash") || lower.includes("v4"))) return { ...KNOWN_MODELS["deepseek-v4-pro-260425"], id: model };
     if (lower.includes("doubao")) return { ...KNOWN_MODELS["doubao-seed-2-0-lite-260215"], id: model };
   }
 
@@ -234,7 +234,7 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
       throw new Error("豆包 API Key 未配置。请在 Vercel 环境变量中设置 DOUBAO_API_KEY 或 ARK_API_KEY。");
     }
 
-    const model = modelOverride || process.env.DOUBAO_MODEL || "deepseek-v4-flash";
+    const model = modelOverride || process.env.DOUBAO_MODEL || "deepseek-v4-pro-260425";
 
     return {
       provider,
@@ -283,7 +283,7 @@ async function generateWithChatCompletions(
       { role: "user", content: prompt }
     ]
   };
-  body[provider.maxTokensField] = 1600;
+  body[provider.maxTokensField] = 2600;
 
   if (provider.supportsJsonMode) {
     body.response_format = { type: "json_object" };
