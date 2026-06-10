@@ -31,7 +31,7 @@ export default async function LoginPage() {
             </div>
             <h1 className="text-[26px] font-bold tracking-heading text-ink">{appName}</h1>
             <p className="mt-2.5 text-sm leading-6 text-muted">
-              面向校园团队的内容生成、保存、发布回填和数据看板后台。
+              校园内容运营平台 v2 · 非官方攻略生成
             </p>
           </div>
           <LoginForm />
