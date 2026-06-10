@@ -57,6 +57,32 @@ export function GenerateClient({
     [models, selectedModel]
   );
 
+  // 智能推荐：根据内容类型+语气+平台推荐最合适的模型
+  const recommendedModel = useMemo(() => {
+    const { platform, contentType, tone } = payload;
+    // 校园生活类 → 豆包（种草测评基因）
+    const campusLife = ["宿舍攻略", "开学清单", "校园周边", "食堂测评"];
+    // 深度分析类 → DeepSeek Pro（推理能力）
+    const deepAnalysis = ["新生避坑", "学长学姐建议"];
+    // 强转化/避坑口吻 → DeepSeek Pro
+    const deepTone = ["强转化口吻", "避坑攻略口吻"];
+    // 小红书种草 → 豆包
+    if (platform === "小红书" && (campusLife.includes(contentType) || contentType === "军训用品")) return "doubao-seed-2-0-lite";
+    // 深度内容 → DeepSeek Pro
+    if (deepAnalysis.includes(contentType) || deepTone.includes(tone)) return "deepseek-v4-pro-260425";
+    // 抖音/视频号 + 清单类 → 极速版
+    if ((platform === "抖音" || platform === "视频号") && ["军训用品", "校园卡", "被子床品"].includes(contentType)) return "deepseek-v4-flash";
+    // 校园生活默认 → 豆包
+    if (campusLife.includes(contentType)) return "doubao-seed-2-0-lite";
+    // 其余 → DeepSeek Pro
+    return "deepseek-v4-pro-260425";
+  }, [payload.platform, payload.contentType, payload.tone]);
+
+  const recModelInfo = useMemo(
+    () => models.find(m => m.id === recommendedModel),
+    [models, recommendedModel]
+  );
+
   function handleModelChange(modelId: string) {
     setSelectedModel(modelId);
     setPayload((current) => ({ ...current, model: modelId }));
@@ -156,6 +182,7 @@ export function GenerateClient({
                   key={model.id}
                   model={model}
                   selected={selectedModel === model.id}
+                  recommended={model.id === recommendedModel && model.id !== selectedModel}
                   onSelect={handleModelChange}
                 />
               ))}
@@ -327,10 +354,12 @@ export function GenerateClient({
 function ModelOption({
   model,
   selected,
+  recommended,
   onSelect
 }: {
   model: FriendlyModelInfo;
   selected: boolean;
+  recommended: boolean;
   onSelect: (id: string) => void;
 }) {
   return (
@@ -340,16 +369,20 @@ function ModelOption({
       className={`w-full rounded-lg border p-3 text-left transition-all duration-200 ${
         selected
           ? "border-brand-200 bg-brand-50/70 ring-1 ring-brand-100 shadow-sm"
-          : "border-line/60 bg-white hover:border-brand-100 hover:bg-brand-50/30"
+          : recommended
+            ? "border-amber-200 bg-amber-50/50 hover:border-amber-300"
+            : "border-line/60 bg-white hover:border-brand-100 hover:bg-brand-50/30"
       }`}
     >
       <div className="flex items-start gap-3">
         <div
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            selected ? "bg-brand-100 text-brand-700" : "bg-canvas-alt text-muted-light"
+            selected ? "bg-brand-100 text-brand-700" : recommended ? "bg-amber-100 text-amber-600" : "bg-canvas-alt text-muted-light"
           }`}
         >
-          {model.id.includes("deepseek") ? (
+          {model.id.includes("deepseek") && model.id.includes("pro") ? (
+            <Zap size={18} />
+          ) : model.id.includes("deepseek") && model.id.includes("flash") ? (
             <Zap size={18} />
           ) : model.id.includes("template") ? (
             <AlertCircle size={18} />
@@ -357,7 +390,7 @@ function ModelOption({
             <Sparkles size={18} />
           )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-semibold text-ink">{model.displayName}</h4>
             {selected ? (
@@ -365,11 +398,18 @@ function ModelOption({
                 <CheckCircle2 size={10} />
                 使用中
               </span>
+            ) : recommended ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                ⭐ 推荐
+              </span>
             ) : null}
           </div>
           <p className="mt-0.5 text-[11px] leading-5 text-muted-light line-clamp-2">
             {model.description}
           </p>
+          {recommended && !selected ? (
+            <p className="mt-1 text-[10px] text-amber-600 font-medium">根据当前参数智能推荐</p>
+          ) : null}
         </div>
       </div>
     </button>
