@@ -71,10 +71,10 @@ function XiaohongshuView({ output }: { output: XiaohongshuOutput }) {
         </ol>
       </Section>
       <Section title="封面文案">
-        <p className="whitespace-pre-wrap">{output.coverText}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.coverText)}</p>
       </Section>
       <Section title="正文内容">
-        <p className="whitespace-pre-wrap">{output.body}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.body)}</p>
       </Section>
       <Section title="6 张配图说明">
         <ul className="list-disc space-y-1 pl-5">
@@ -91,10 +91,10 @@ function XiaohongshuView({ output }: { output: XiaohongshuOutput }) {
         </div>
       </Section>
       <Section title="评论区引导">
-        <p>{output.commentGuide}</p>
+        <p>{safeItem(output.commentGuide)}</p>
       </Section>
       <Section title="私信引导">
-        <p>{output.dmGuide}</p>
+        <p>{safeItem(output.dmGuide)}</p>
       </Section>
     </>
   );
@@ -104,13 +104,13 @@ function DouyinView({ output }: { output: DouyinOutput }) {
   return (
     <>
       <Section title="3 秒开头钩子">
-        <p>{output.hook3s}</p>
+        <p>{safeItem(output.hook3s)}</p>
       </Section>
       <Section title="15 秒短视频脚本">
-        <p className="whitespace-pre-wrap">{output.script15s}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.script15s)}</p>
       </Section>
       <Section title="30 秒短视频脚本">
-        <p className="whitespace-pre-wrap">{output.script30s}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.script30s)}</p>
       </Section>
       <Section title="分镜脚本">
         <ul className="list-disc space-y-1 pl-5">
@@ -128,10 +128,10 @@ function DouyinView({ output }: { output: DouyinOutput }) {
         </ul>
       </Section>
       <Section title="发布标题">
-        <p>{output.publishTitle}</p>
+        <p>{safeItem(output.publishTitle)}</p>
       </Section>
       <Section title="评论区引导">
-        <p>{output.commentGuide}</p>
+        <p>{safeItem(output.commentGuide)}</p>
       </Section>
     </>
   );
@@ -141,16 +141,16 @@ function VideoChannelView({ output }: { output: VideoChannelOutput }) {
   return (
     <>
       <Section title="视频标题">
-        <p>{output.videoTitle}</p>
+        <p>{safeItem(output.videoTitle)}</p>
       </Section>
       <Section title="视频正文">
-        <p className="whitespace-pre-wrap">{output.videoBody}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.videoBody)}</p>
       </Section>
       <Section title="朋友圈转发文案">
-        <p className="whitespace-pre-wrap">{output.momentsCopy}</p>
+        <p className="whitespace-pre-wrap">{safeItem(output.momentsCopy)}</p>
       </Section>
       <Section title="私域引导话术">
-        <p>{output.privateGuide}</p>
+        <p>{safeItem(output.privateGuide)}</p>
       </Section>
     </>
   );

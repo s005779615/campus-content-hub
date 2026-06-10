@@ -104,7 +104,8 @@ export function GenerateClient({
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setMessage(data.error ?? "生成失败，请稍后重试。");
+      const errMsg = typeof data.error === "string" ? data.error : (data.error?.message || data.error?.code || "生成失败，请稍后重试。");
+      setMessage(String(errMsg));
       setMessageType("error");
       return;
     }
@@ -151,7 +152,8 @@ export function GenerateClient({
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setMessage(data.error ?? "保存失败。");
+      const errMsg = typeof data.error === "string" ? data.error : (data.error?.message || "保存失败。");
+      setMessage(String(errMsg));
       setMessageType("error");
       return;
     }
