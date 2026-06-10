@@ -89,7 +89,7 @@ export function getAvailableModels(): FriendlyModelInfo[] {
 
   if (provider === "doubao") {
     // 豆包 provider 下，DeepSeek 和豆包模型都可用（同一火山方舟 API）
-    const configuredModel = process.env.DOUBAO_MODEL ?? "doubao-seed-2-0-lite-260215";
+    const configuredModel = process.env.DOUBAO_MODEL ?? "deepseek-v4-flash";
     return [
       KNOWN_MODELS["deepseek-v4-pro-260425"],
       KNOWN_MODELS["deepseek-v4-flash"],
@@ -283,7 +283,7 @@ async function generateWithChatCompletions(
       { role: "user", content: prompt }
     ]
   };
-  body[provider.maxTokensField] = 2600;
+  body[provider.maxTokensField] = 1600;
 
   if (provider.supportsJsonMode) {
     body.response_format = { type: "json_object" };
