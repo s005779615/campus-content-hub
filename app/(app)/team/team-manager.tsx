@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Loader2, Save, UserPlus } from "lucide-react";
+import { Loader2, Save, Trash2, UserPlus } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import type { Profile, SchoolRecord } from "@/lib/types";
 
@@ -26,6 +26,7 @@ export function TeamManager({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
+  const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selection, setSelection] = useState<Record<string, string[]>>(() => {
     return members.reduce<Record<string, string[]>>((acc, member) => {
@@ -114,6 +115,34 @@ export function TeamManager({
     router.refresh();
   }
 
+  async function deleteMember(member: Profile) {
+    const memberName = member.full_name || member.email;
+    const confirmed = window.confirm(
+      `确认删除负责人“${memberName}”吗？\n\n删除后，该账号的学校分配、任务、生成内容和回填数据都会永久删除，无法恢复。`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingMemberId(member.id);
+    setError("");
+
+    const response = await fetch(`/api/team-members/${member.id}`, {
+      method: "DELETE"
+    });
+    const data = await response.json().catch(() => ({}));
+
+    setDeletingMemberId(null);
+
+    if (!response.ok) {
+      setError(data.error ?? "删除负责人失败。");
+      return;
+    }
+
+    router.refresh();
+  }
+
   return (
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="panel p-5">
@@ -173,19 +202,38 @@ export function TeamManager({
                         : "暂无"}
                     </p>
                   </div>
-                  <button
-                    className="button-secondary text-xs shrink-0"
-                    onClick={() => saveSchools(member.id)}
-                    disabled={savingMemberId === member.id}
-                    type="button"
-                  >
-                    {savingMemberId === member.id ? (
-                      <Loader2 className="animate-spin" size={14} />
-                    ) : (
-                      <Save size={14} />
-                    )}
-                    保存分配
-                  </button>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <button
+                      className="button-secondary text-xs"
+                      onClick={() => saveSchools(member.id)}
+                      disabled={
+                        savingMemberId === member.id || deletingMemberId === member.id
+                      }
+                      type="button"
+                    >
+                      {savingMemberId === member.id ? (
+                        <Loader2 className="animate-spin" size={14} />
+                      ) : (
+                        <Save size={14} />
+                      )}
+                      保存分配
+                    </button>
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-coral-100 bg-white px-4 py-2.5 text-xs font-medium text-coral-600 transition-colors hover:bg-coral-50 focus:outline-none focus:ring-2 focus:ring-coral-200 focus:ring-offset-2"
+                      onClick={() => deleteMember(member)}
+                      disabled={
+                        deletingMemberId === member.id || savingMemberId === member.id
+                      }
+                      type="button"
+                    >
+                      {deletingMemberId === member.id ? (
+                        <Loader2 className="animate-spin" size={14} />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                      删除负责人
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
