@@ -66,7 +66,7 @@ export function LoginForm() {
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-light"
             />
             <input
-              className="form-input h-[52px] bg-canvas-alt pl-12 text-[15px]"
+              className="form-input h-[52px] bg-canvas-alt !pl-12 text-[15px]"
               name="username"
               autoComplete="username"
               required
@@ -83,7 +83,7 @@ export function LoginForm() {
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-light"
             />
             <input
-              className="form-input h-[52px] bg-canvas-alt pl-12 pr-12 text-[15px]"
+              className="form-input h-[52px] bg-canvas-alt !pl-12 !pr-12 text-[15px]"
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"

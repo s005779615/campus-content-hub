@@ -34,7 +34,7 @@ export default async function LoginPage() {
           <span className="text-sm text-muted">团队工作台</span>
         </header>
 
-        <div className="grid flex-1 items-center gap-16 py-12 lg:grid-cols-[0.92fr_1.08fr] lg:py-16">
+        <div className="grid gap-16 pb-16 pt-28 lg:flex-1 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:py-16">
           <section className="mx-auto w-full max-w-[430px] lg:mx-0">
             <div className="mb-9">
               <h1 className="text-[32px] font-semibold tracking-heading text-ink sm:text-[38px]">
