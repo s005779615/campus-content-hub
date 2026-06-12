@@ -164,17 +164,17 @@ export function GenerateClient({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
-      <section className="panel p-5">
-        <h2 className="text-sm font-bold text-ink">生成参数</h2>
+    <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+      <section className="panel p-5 sm:p-6">
+        <h2 className="text-sm font-semibold text-ink">生成参数</h2>
         <AiStatusBanner status={aiStatus} />
 
         {/* ── 模型选择器 ── */}
         {models.length > 1 ? (
-          <div className="mt-4 rounded-xl border border-line/60 bg-canvas-alt/40 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Brain size={15} className="text-brand-500" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-light">
+          <div className="mt-5 border-y border-line py-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Brain size={15} strokeWidth={1.7} className="text-muted" />
+              <span className="text-xs font-semibold text-muted">
                 选择创作引擎
               </span>
             </div>
@@ -291,7 +291,7 @@ export function GenerateClient({
           </div>
 
           {selectedSchool ? (
-            <div className="rounded-lg border border-line/60 bg-canvas-alt/40 p-3 text-sm leading-6 text-muted">
+            <div className="rounded-md border border-line bg-canvas-alt p-3 text-sm leading-6 text-muted">
               <span className="text-xs font-semibold text-muted-light">学校资料预览 · </span>
               {selectedSchool.city} ·{" "}
               {selectedSchool.dormitory_info || selectedSchool.registration_notes || "资料较少，建议先补充学校信息"}
@@ -337,8 +337,8 @@ export function GenerateClient({
         ) : (
           <div className="panel flex min-h-[420px] items-center justify-center p-8 text-center">
             <div>
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600">
-                <WandSparkles size={26} />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-line bg-canvas-alt text-muted">
+                <WandSparkles size={22} strokeWidth={1.7} />
               </div>
               <h2 className="mt-4 text-[15px] font-semibold text-ink">等待生成</h2>
               <p className="mt-1.5 max-w-sm text-[13px] leading-6 text-muted">
@@ -368,18 +368,18 @@ function ModelOption({
     <button
       type="button"
       onClick={() => onSelect(model.id)}
-      className={`w-full rounded-lg border p-3 text-left transition-all duration-200 ${
+      className={`w-full rounded-md border p-3 text-left transition-colors duration-150 ${
         selected
-          ? "border-brand-200 bg-brand-50/70 ring-1 ring-brand-100 shadow-sm"
+          ? "border-brand-700 bg-white ring-1 ring-brand-700"
           : recommended
-            ? "border-amber-200 bg-amber-50/50 hover:border-amber-300"
-            : "border-line/60 bg-white hover:border-brand-100 hover:bg-brand-50/30"
+            ? "border-brand-300 bg-canvas-alt hover:border-brand-500"
+            : "border-line bg-white hover:border-brand-400"
       }`}
     >
       <div className="flex items-start gap-3">
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            selected ? "bg-brand-100 text-brand-700" : recommended ? "bg-amber-100 text-amber-600" : "bg-canvas-alt text-muted-light"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors ${
+            selected ? "bg-brand-900 text-white" : recommended ? "bg-brand-100 text-brand-700" : "bg-canvas-alt text-muted-light"
           }`}
         >
           {model.id.includes("deepseek") && model.id.includes("pro") ? (
@@ -396,13 +396,14 @@ function ModelOption({
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-semibold text-ink">{model.displayName}</h4>
             {selected ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+              <span className="inline-flex items-center gap-1 rounded bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
                 <CheckCircle2 size={10} />
                 使用中
               </span>
             ) : recommended ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                ⭐ 推荐
+              <span className="inline-flex items-center gap-1 rounded bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                <Sparkles size={10} />
+                推荐
               </span>
             ) : null}
           </div>
@@ -410,7 +411,7 @@ function ModelOption({
             {model.description}
           </p>
           {recommended && !selected ? (
-            <p className="mt-1 text-[10px] text-amber-600 font-medium">根据当前参数智能推荐</p>
+            <p className="mt-1 text-[10px] font-medium text-muted">根据当前参数智能推荐</p>
           ) : null}
         </div>
       </div>

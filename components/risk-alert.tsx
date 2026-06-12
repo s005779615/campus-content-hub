@@ -4,17 +4,17 @@ import type { RiskHit } from "@/lib/types";
 export function RiskAlert({ hits }: { hits: RiskHit[] }) {
   if (!hits.length) {
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-brand-200/60 bg-brand-50/60 px-4 py-3 text-sm font-medium text-brand-700">
-        <CheckCircle2 size={17} className="text-brand-500 shrink-0" />
+      <div className="flex items-center gap-2.5 rounded-md border border-line bg-white px-4 py-3 text-sm font-medium text-ink-soft">
+        <CheckCircle2 size={17} className="shrink-0 text-brand-600" />
         合规检查通过：未发现内置风险词。
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-coral-100 bg-coral-50/70 p-4">
+    <div className="rounded-md border border-coral-100 bg-coral-50 p-4">
       <div className="flex items-center gap-2.5 text-sm font-semibold text-coral-700">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-coral-100 text-coral-600">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-coral-100 text-coral-600">
           <AlertTriangle size={15} />
         </div>
         发现需要修改的风险表达

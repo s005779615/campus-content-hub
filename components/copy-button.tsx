@@ -20,10 +20,10 @@ export function CopyButton({
 
   return (
     <button
-      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
         copied
-          ? "bg-brand-50 text-brand-700 border border-brand-200"
-          : "border border-line bg-white text-muted hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.97]"
+          ? "border-brand-300 bg-canvas-alt text-ink"
+          : "border-line bg-white text-muted hover:border-brand-400 hover:text-ink"
       }`}
       onClick={copy}
       type="button"

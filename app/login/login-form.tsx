@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2, LockKeyhole, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, LockKeyhole, User } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -17,8 +17,17 @@ export function LoginForm() {
     setLoading(true);
 
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
+    const username = String(form.get("username") ?? "").trim().toLowerCase();
     const password = String(form.get("password") ?? "");
+
+    if (!username) {
+      setError("请输入账号名");
+      setLoading(false);
+      return;
+    }
+
+    // 将账号名映射为内部邮箱
+    const email = `u_${username}@campus.local`;
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -45,20 +54,19 @@ export function LoginForm() {
     <form onSubmit={onSubmit}>
       <div className="space-y-5">
         <label className="block">
-          <span className="form-label">邮箱</span>
+          <span className="form-label">账号名</span>
           <span className="relative block">
-            <Mail
+            <User
               size={19}
               strokeWidth={1.7}
               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-light"
             />
             <input
               className="form-input h-[52px] bg-canvas-alt pl-12 text-[15px]"
-              name="email"
-              type="email"
-              autoComplete="email"
+              name="username"
+              autoComplete="username"
               required
-              placeholder="请输入邮箱地址"
+              placeholder="请输入账号名"
             />
           </span>
         </label>

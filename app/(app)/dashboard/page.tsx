@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   BarChart3,
   CalendarDays,
   CheckCircle2,
@@ -7,13 +6,11 @@ import {
   FileText,
   MessageCircle,
   School,
-  Sparkles,
   TrendingUp,
   UsersRound,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
 import { PlatformBadge } from "@/components/platform-badge";
 import { StatCard } from "@/components/stat-card";
 import { homeTips } from "@/lib/constants";
@@ -91,45 +88,35 @@ export default async function DashboardPage() {
 
   return (
     <>
-      {/* ── 欢迎区 ── */}
-      <div className="mb-6 rounded-2xl bg-gradient-to-br from-brand-800 via-brand-900 to-black p-6 text-white shadow-elevated sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-100">
-              {greeting}，{profile.full_name || profile.email}
-            </p>
-            <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-[28px]">
-              {profile.role === "admin" ? "团队内容运营中台" : "校园内容工作台"}
-            </h1>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-brand-100/90">
-              {profile.role === "admin"
-                ? `${schoolRows.length} 所学校 · ${memberRows.length} 名队员 · ${contentRows.length} 条内容`
-                : `${schoolRows.length} 所负责学校 · ${taskRows.length} 个今日任务`}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/generate"
-              className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/25 active:scale-[0.98]"
-            >
-              <WandSparkles size={17} />
-              生成内容
+      <div className="mb-7 flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm text-muted">
+            {greeting}，{profile.full_name || profile.email}
+          </p>
+          <h1 className="mt-2 text-[28px] font-semibold tracking-heading text-ink sm:text-[34px]">
+            {profile.role === "admin" ? "团队内容运营中台" : "校园内容工作台"}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {profile.role === "admin"
+              ? `${schoolRows.length} 所学校 · ${memberRows.length} 名队员 · ${contentRows.length} 条最近内容`
+              : `${schoolRows.length} 所负责学校 · ${taskRows.length} 个今日任务`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/generate" className="button-primary">
+            <WandSparkles size={16} strokeWidth={1.8} />
+            生成内容
+          </Link>
+          {profile.role === "admin" ? (
+            <Link href="/analytics" className="button-secondary">
+              <BarChart3 size={16} strokeWidth={1.8} />
+              数据看板
             </Link>
-            {profile.role === "admin" ? (
-              <Link
-                href="/analytics"
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-medium text-white/90 backdrop-blur-sm transition-all hover:bg-white/20 active:scale-[0.98]"
-              >
-                <BarChart3 size={17} />
-                数据看板
-              </Link>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
 
-      {/* ── 统计卡片 ── */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid overflow-hidden rounded-lg border border-line bg-line gap-px sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="可见学校" value={schoolRows.length} icon={School} />
         <StatCard title="内容总数" value={contentRows.length} icon={FileText} />
         <StatCard
@@ -150,142 +137,138 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        {/* ── 最近内容 ── */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
         <section className="panel overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-            <div className="flex items-center gap-2">
-              <FileText size={16} className="text-brand-500" />
-              <h2 className="text-sm font-bold text-ink">最近生成内容</h2>
+          <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+            <div>
+              <h2 className="text-sm font-semibold text-ink">最近生成内容</h2>
+              <p className="mt-1 text-xs text-muted-light">团队最近保存的内容记录</p>
             </div>
-            <Link href="/library" className="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
+            <Link href="/library" className="text-xs font-medium text-ink underline-offset-4 hover:underline">
               查看全部
             </Link>
           </div>
-          <div className="divide-y divide-line/50">
+          <div className="divide-y divide-line">
             {contentRows.length ? (
-              contentRows.map((item, idx) => (
+              contentRows.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-canvas-alt/30"
+                  className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-canvas-alt/50 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <PlatformBadge platform={item.platform} />
-                      <p className="truncate text-[13px] font-semibold text-ink">
+                      <p className="truncate text-sm font-medium text-ink">
                         {item.content_type}
                       </p>
-                      <span className="text-[11px] text-muted-light">
+                      <span className="text-xs text-muted">
                         {item.schools?.name ?? "未命名学校"}
                       </span>
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-light">
+                    <p className="mt-1.5 text-xs leading-5 text-muted-light">
                       {item.content_goal} · {item.tone} · {formatDateTime(item.created_at)}
                       {item.profiles ? ` · ${item.profiles.full_name || item.profiles.email}` : ""}
                     </p>
                   </div>
-                  <Link className="button-secondary text-xs !px-3 !py-1.5 shrink-0" href="/library">
-                    查看
+                  <Link className="text-xs font-medium text-muted hover:text-ink" href="/library">
+                    查看内容
                   </Link>
                 </div>
               ))
             ) : (
-              <div className="px-5 py-10 text-center text-[13px] text-muted-light">
+              <div className="px-5 py-12 text-center text-sm text-muted-light">
                 还没有生成记录，先去生成一条内容。
               </div>
             )}
           </div>
         </section>
 
-        {/* ── 今日任务 + 最近发布 ── */}
-        <div className="space-y-5">
+        <div className="space-y-6">
           <section className="panel overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <CalendarDays size={16} className="text-brand-500" />
-                <h2 className="text-sm font-bold text-ink">今日任务</h2>
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">今日任务</h2>
+                <p className="mt-1 text-xs text-muted-light">
+                  {doneTasks}/{taskRows.length} 已完成
+                </p>
               </div>
-              <Link href="/tasks" className="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
+              <Link href="/tasks" className="text-xs font-medium text-ink underline-offset-4 hover:underline">
                 全部任务
               </Link>
             </div>
-            <div className="divide-y divide-line/50">
+            <div className="divide-y divide-line">
               {taskRows.length ? (
                 taskRows.map((task) => (
                   <div key={task.id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-ink">
-                          {task.schools?.name ?? "不限学校"}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-light">
-                          {profile.role === "admin"
-                            ? task.profiles?.full_name || task.profiles?.email
-                            : task.note || "完成后到任务页勾选"}
-                        </p>
-                      </div>
+                    <div className="flex items-start gap-3">
                       <span
-                        className={`badge shrink-0 ${
-                          task.is_done
-                            ? "bg-brand-50 text-brand-700"
-                            : "bg-coral-50 text-coral-600"
+                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                          task.is_done ? "bg-brand-800" : "border border-brand-400 bg-white"
                         }`}
-                      >
-                        {task.is_done ? (
-                          <CheckCircle2 size={11} />
-                        ) : (
-                          <Clock size={11} />
-                        )}
-                        {task.is_done
-                          ? "已完成"
-                          : `${task.completed_count}/${task.required_count}`}
-                      </span>
-                    </div>
-                    {!task.is_done ? (
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-canvas-alt">
-                        <div
-                          className="h-full rounded-full bg-brand-500 transition-all"
-                          style={{
-                            width: `${Math.round((task.completed_count / task.required_count) * 100)}%`,
-                          }}
-                        />
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[13px] font-semibold text-ink">
+                              {task.schools?.name ?? "不限学校"}
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-muted">
+                              {profile.role === "admin"
+                                ? task.profiles?.full_name || task.profiles?.email
+                                : task.note || "完成后到任务页勾选"}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs font-medium tabular-nums text-muted">
+                            {task.is_done ? "已完成" : `${task.completed_count}/${task.required_count}`}
+                          </span>
+                        </div>
+                        {!task.is_done ? (
+                          <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-canvas-alt">
+                            <div
+                              className="h-full rounded-full bg-brand-700 transition-all"
+                              style={{
+                                width: `${Math.round((task.completed_count / task.required_count) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="px-5 py-8 text-center text-[13px] text-muted-light">
+                <div className="px-5 py-10 text-center text-sm text-muted-light">
                   今天暂无任务。
                 </div>
               )}
             </div>
           </section>
 
-          {/* 最近发布动态 */}
           {recentPubsRows.length > 0 ? (
             <section className="panel overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-                <TrendingUp size={16} className="text-brand-500" />
-                <h2 className="text-sm font-bold text-ink">最近发布</h2>
+              <div className="flex items-center justify-between border-b border-line px-5 py-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-ink">最近发布</h2>
+                  <p className="mt-1 text-xs text-muted-light">发布后的最新数据变化</p>
+                </div>
+                <TrendingUp size={17} strokeWidth={1.7} className="text-muted-light" />
               </div>
-              <div className="divide-y divide-line/50">
+              <div className="divide-y divide-line">
                 {recentPubsRows.map((pub) => (
-                  <div key={pub.id} className="px-5 py-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-ink truncate">
-                          {pub.schools?.name ?? "-"} · {pub.content_records?.content_type ?? "-"}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-light">
-                          {pub.profiles?.full_name || pub.profiles?.email || "-"} · {formatDate(pub.created_at)}
-                        </p>
-                      </div>
-                      <span className="text-[13px] font-bold text-brand-600 shrink-0">
-                        {pub.private_messages + pub.wechat_adds > 0
-                          ? `+${pub.private_messages + pub.wechat_adds} 线索`
-                          : `${pub.views} 播放`}
-                      </span>
+                  <div key={pub.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-medium text-ink">
+                        {pub.schools?.name ?? "-"} · {pub.content_records?.content_type ?? "-"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-light">
+                        {pub.profiles?.full_name || pub.profiles?.email || "-"} · {formatDate(pub.created_at)}
+                      </p>
                     </div>
+                    <span className="shrink-0 text-xs font-semibold tabular-nums text-ink">
+                      {pub.private_messages + pub.wechat_adds > 0
+                        ? `+${pub.private_messages + pub.wechat_adds} 线索`
+                        : `${pub.views} 播放`}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -294,21 +277,18 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 底部提示卡片 ── */}
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <div className="mt-6 grid overflow-hidden rounded-lg border border-line bg-white md:grid-cols-2 md:divide-x md:divide-line">
         {homeTips.map((tip) => {
           const Icon = tip.icon;
 
           return (
-            <div key={tip.title} className="panel p-5 transition-all hover:-translate-y-0.5">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-semibold text-ink">{tip.title}</h3>
-                  <p className="mt-1 text-[13px] leading-6 text-muted">{tip.text}</p>
-                </div>
+            <div key={tip.title} className="flex gap-4 border-b border-line p-5 last:border-b-0 md:border-b-0 sm:p-6">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center text-muted-light">
+                <Icon size={19} strokeWidth={1.7} />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink">{tip.title}</h3>
+                <p className="mt-1 text-[13px] leading-6 text-muted">{tip.text}</p>
               </div>
             </div>
           );

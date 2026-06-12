@@ -70,14 +70,14 @@ type NavItem = {
 };
 
 export const navItems = [
-  { href: "/dashboard", label: "首页", icon: LayoutDashboard },
-  { href: "/schools", label: "学校", icon: School },
-  { href: "/team", label: "队员", icon: UsersRound, adminOnly: true },
-  { href: "/generate", label: "生成", icon: WandSparkles },
-  { href: "/accounts", label: "账号", icon: Smartphone },
+  { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/generate", label: "内容生成", icon: WandSparkles },
+  { href: "/accounts", label: "平台账号", icon: Smartphone },
   { href: "/library", label: "内容库", icon: FileText },
-  { href: "/tasks", label: "任务", icon: CalendarDays },
-  { href: "/analytics", label: "看板", icon: BarChart3 },
+  { href: "/tasks", label: "发布任务", icon: CalendarDays },
+  { href: "/schools", label: "学校管理", icon: School },
+  { href: "/team", label: "队员管理", icon: UsersRound, adminOnly: true },
+  { href: "/analytics", label: "数据看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
 ] satisfies readonly NavItem[];
 

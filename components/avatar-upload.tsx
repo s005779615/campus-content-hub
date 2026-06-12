@@ -44,7 +44,7 @@ export function AvatarUpload({ url }: { url: string | null }) {
     <div className="flex items-center gap-4">
       <button
         type="button"
-        className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 transition-shadow hover:shadow-md"
+        className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-canvas-alt"
         onClick={() => inputRef.current?.click()}
         disabled={loading}
       >

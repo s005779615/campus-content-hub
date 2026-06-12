@@ -19,14 +19,14 @@ export function ContentOutput({
 
   return (
     <div className="panel overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
           <PlatformBadge platform={platform} />
           <span className="text-[13px] font-semibold text-ink">生成结果</span>
         </div>
         <CopyButton text={allText} label="复制全文" />
       </div>
-      <div className="space-y-3 p-5">
+      <div className="divide-y divide-line px-5">
         {platform === "小红书" ? (
           <XiaohongshuView output={output as XiaohongshuOutput} />
         ) : platform === "抖音" ? (
@@ -47,8 +47,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-line/60 bg-white p-4 transition-shadow hover:shadow-sm">
-      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-light">{title}</h3>
+    <section className="py-5">
+      <h3 className="text-xs font-semibold text-muted">{title}</h3>
       <div className="mt-2.5 text-sm leading-7 text-ink-soft">{children}</div>
     </section>
   );
@@ -84,7 +84,7 @@ function XiaohongshuView({ output }: { output: XiaohongshuOutput }) {
       <Section title="10 个标签">
         <div className="flex flex-wrap gap-2">
           {output.tags?.map((tag) => (
-            <span key={tag} className="rounded-md bg-white px-2 py-1 text-xs text-muted">
+            <span key={tag} className="rounded bg-canvas-alt px-2 py-1 text-xs text-muted">
               #{tag}
             </span>
           ))}

@@ -2,7 +2,7 @@ import { AlertTriangle } from "lucide-react";
 
 export function ConfigWarning() {
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border border-coral-100 bg-white p-6 shadow-card">
+    <div className="mx-auto max-w-2xl rounded-lg border border-coral-100 bg-white p-6">
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral-50 text-coral-500">
           <AlertTriangle size={20} />
