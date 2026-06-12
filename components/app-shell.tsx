@@ -2,12 +2,44 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 import { appName, navItems } from "@/lib/constants";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
+
+function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={clsx(
+        "flex shrink-0 items-center justify-center rounded-md bg-brand-900 font-semibold text-white",
+        compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-[15px]"
+      )}
+      aria-hidden="true"
+    >
+      校
+    </span>
+  );
+}
+
+function ProfileAvatar({ profile }: { profile: Profile }) {
+  if (profile.avatar_url) {
+    return (
+      <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-line bg-white">
+        <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
+
+  const initial = (profile.full_name || profile.email || "校").slice(0, 1);
+
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-canvas-alt text-sm font-semibold text-ink">
+      {initial}
+    </span>
+  );
+}
 
 export function AppShell({
   profile,
@@ -30,125 +62,107 @@ export function AppShell({
     router.replace("/login");
   }
 
+  const navigation = (
+    <nav className="space-y-1" aria-label="主导航">
+      {visibleItems.map((item) => {
+        const active = pathname === item.href;
+        const Icon = item.icon;
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setOpen(false)}
+            className={clsx(
+              "group relative flex min-h-10 items-center gap-3 rounded-md px-3 text-[13px] font-medium transition-colors",
+              active
+                ? "bg-canvas-alt text-ink"
+                : "text-muted hover:bg-canvas-alt/70 hover:text-ink"
+            )}
+          >
+            {active ? (
+              <span className="absolute -left-3 h-5 w-0.5 rounded-r bg-brand-900" />
+            ) : null}
+            <Icon
+              size={17}
+              strokeWidth={1.7}
+              className={active ? "text-ink" : "text-muted-light group-hover:text-muted"}
+            />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-30 border-b border-line/50 glass-header">
-        <div className="flex h-14 items-center justify-between px-4 lg:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              className="button-ghost h-9 w-9 p-0 lg:hidden"
-              onClick={() => setOpen(true)}
-              aria-label="打开导航"
-            >
-              <Menu size={20} />
-            </button>
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              {profile.avatar_url ? (
-                <span className="h-9 w-9 overflow-hidden rounded-xl shadow-sm shadow-brand-200/50 ring-2 ring-brand-100">
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-                </span>
-              ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink to-brand-700 text-sm font-bold text-white shadow-sm shadow-brand-200/50">
-                  校
-                </span>
-              )}
-              <span className="text-[15px] font-semibold tracking-tight text-ink">{appName}</span>
-            </Link>
-          </div>
+      <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur lg:hidden">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <BrandMark compact />
+          <span className="text-sm font-semibold tracking-tight">{appName}</span>
+        </Link>
+        <button
+          className="button-ghost h-9 w-9 p-0"
+          onClick={() => setOpen(true)}
+          aria-label="打开导航"
+        >
+          <Menu size={20} />
+        </button>
+      </header>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-[13px] font-semibold leading-5 text-ink-soft">
-                {profile.full_name || profile.email}
-              </p>
-              <p className="text-[11px] font-medium text-muted-light">
-                {profile.role === "admin" ? "管理员" : "队员"}
-              </p>
+      <div className="mx-auto flex min-h-screen w-full max-w-[1600px]">
+        <aside className="sticky top-0 hidden h-screen w-[224px] shrink-0 flex-col border-r border-line bg-white px-4 py-5 lg:flex">
+          <Link href="/dashboard" className="flex items-center gap-3 px-1">
+            <BrandMark />
+            <div>
+              <p className="text-[15px] font-semibold tracking-tight">{appName}</p>
+              <p className="mt-0.5 text-[10px] tracking-[0.12em] text-muted-light">团队工作台</p>
             </div>
-            <div className="flex items-center gap-1 rounded-lg border border-line/80 bg-white p-0.5">
+          </Link>
+
+          <div className="mt-9 flex-1">{navigation}</div>
+
+          <div className="border-t border-line pt-4">
+            <div className="flex items-center gap-3 px-1">
+              <ProfileAvatar profile={profile} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-ink">
+                  {profile.full_name || profile.email}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-light">
+                  {profile.role === "admin" ? "管理员" : "团队成员"}
+                </p>
+              </div>
               <button
-                className="flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted transition-all hover:bg-canvas-alt hover:text-ink"
+                className="button-ghost h-8 w-8 shrink-0 p-0"
                 onClick={signOut}
                 aria-label="退出登录"
+                title="退出登录"
               >
-                <LogOut size={14} />
-                <span className="hidden sm:inline">退出</span>
+                <LogOut size={15} />
               </button>
             </div>
           </div>
-        </div>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-[1440px]">
-        {/* ── Desktop Sidebar ── */}
-        <aside className="sticky top-14 hidden h-[calc(100vh-56px)] w-[232px] shrink-0 border-r border-line/40 bg-white/60 px-3 py-5 lg:block">
-          <nav className="space-y-0.5">
-            {visibleItems.map((item) => {
-              const active = pathname === item.href;
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={clsx(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
-                    active
-                      ? "bg-brand-50 text-brand-700 shadow-sm"
-                      : "text-muted hover:bg-canvas-alt hover:text-ink"
-                  )}
-                >
-                  <Icon
-                    size={18}
-                    className={clsx(
-                      "transition-colors duration-200",
-                      active ? "text-brand-500" : "text-muted-light group-hover:text-muted"
-                    )}
-                  />
-                  <span className="flex-1">{item.label}</span>
-                  {active ? (
-                    <ChevronRight size={14} className="text-brand-400" />
-                  ) : null}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Sidebar footer */}
-          <div className="mt-6 rounded-lg border border-brand-100/60 bg-gradient-to-br from-brand-50/80 to-white p-3.5">
-            <div className="flex items-center gap-2">
-              <Sparkles size={14} className="text-brand-500" />
-              <p className="text-[12px] font-semibold text-brand-700">校园内容中台</p>
-            </div>
-            <p className="mt-1.5 text-[11px] leading-5 text-muted-light">
-              非官方校园生活攻略 · 学长学姐视角 · 新生避坑
-            </p>
-          </div>
         </aside>
 
-        {/* ── Mobile Drawer ── */}
         {open ? (
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
-              className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
               onClick={() => setOpen(false)}
               aria-label="关闭导航遮罩"
             />
-            <aside className="absolute left-0 top-0 flex h-full w-[280px] flex-col bg-white shadow-nav">
-              <div className="flex h-14 items-center justify-between border-b border-line px-4">
-                <div className="flex items-center gap-2">
-                  {profile.avatar_url ? (
-                    <span className="h-8 w-8 overflow-hidden rounded-lg ring-2 ring-brand-100">
-                      <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-                    </span>
-                  ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-ink to-brand-700 text-sm font-bold text-white">
-                      校
-                    </span>
-                  )}
+            <aside className="absolute right-0 top-0 flex h-full w-[292px] flex-col bg-white px-4 py-5 shadow-nav">
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2.5"
+                  onClick={() => setOpen(false)}
+                >
+                  <BrandMark compact />
                   <span className="text-sm font-semibold">{appName}</span>
-                </div>
+                </Link>
                 <button
                   className="button-ghost h-9 w-9 p-0"
                   onClick={() => setOpen(false)}
@@ -157,35 +171,36 @@ export function AppShell({
                   <X size={19} />
                 </button>
               </div>
-              <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-                {visibleItems.map((item) => {
-                  const active = pathname === item.href;
-                  const Icon = item.icon;
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={clsx(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                        active
-                          ? "bg-brand-50 text-brand-700"
-                          : "text-muted hover:bg-canvas-alt hover:text-ink"
-                      )}
-                    >
-                      <Icon size={18} />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </nav>
+              <div className="mt-8 flex-1 overflow-y-auto">{navigation}</div>
+
+              <div className="border-t border-line pt-4">
+                <div className="flex items-center gap-3">
+                  <ProfileAvatar profile={profile} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold">
+                      {profile.full_name || profile.email}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-light">
+                      {profile.role === "admin" ? "管理员" : "团队成员"}
+                    </p>
+                  </div>
+                  <button
+                    className="button-ghost h-9 w-9 p-0"
+                    onClick={signOut}
+                    aria-label="退出登录"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              </div>
             </aside>
           </div>
         ) : null}
 
-        {/* ── Main Content ── */}
-        <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 lg:px-10">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10 xl:px-12">
+          {children}
+        </main>
       </div>
     </div>
   );

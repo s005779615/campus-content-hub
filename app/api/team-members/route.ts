@@ -55,18 +55,30 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as {
-      email: string;
+      username: string;
       password: string;
       fullName?: string;
     };
 
+    const username = (body.username || "").trim().toLowerCase();
+    if (!username || username.length < 2) {
+      return NextResponse.json({ error: "账号名至少2个字符" }, { status: 400 });
+    }
+    if (!/^[a-z0-9_]+$/.test(username)) {
+      return NextResponse.json({ error: "账号名只能包含字母、数字和下划线" }, { status: 400 });
+    }
+
+    // 内部用虚拟邮箱注册 Supabase Auth
+    const internalEmail = `u_${username}@campus.local`;
+
     const admin = createSupabaseAdminClient();
     const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email: body.email,
+      email: internalEmail,
       password: body.password,
       email_confirm: true,
       user_metadata: {
-        full_name: body.fullName,
+        full_name: body.fullName || username,
+        username: username,
         role: "member"
       }
     });
@@ -75,7 +87,7 @@ export async function POST(request: Request) {
       const msg = createError?.message ?? "";
       if (msg.includes("already") || msg.includes("registered") || msg.includes("exists") || msg.includes("已被")) {
         return NextResponse.json(
-          { error: `邮箱 ${body.email} 已注册过，请换一个邮箱或让队员直接登录。` },
+          { error: `账号「${username}」已被使用，换一个账号名。` },
           { status: 400 }
         );
       }
@@ -89,8 +101,8 @@ export async function POST(request: Request) {
       .from("profiles")
       .upsert({
         id: created.user.id,
-        email: body.email,
-        full_name: body.fullName ?? null,
+        email: internalEmail,
+        full_name: body.fullName || username,
         role: "member"
       })
       .select("id,email,full_name,role,created_at")

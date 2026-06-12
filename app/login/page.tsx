@@ -21,59 +21,73 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-canvas lg:grid-cols-[1.05fr_0.95fr]">
-      {/* Left: Login form */}
-      <section className="flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[380px]">
-          <div className="mb-10">
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-ink to-brand-700 text-lg font-bold text-white shadow-md shadow-brand-200/40">
-              校
-            </div>
-            <h1 className="text-[26px] font-bold tracking-heading text-ink">{appName}</h1>
-            <p className="mt-2.5 text-sm leading-6 text-muted">
-              校园内容运营平台 v2 · 非官方攻略生成
-            </p>
-          </div>
-          <LoginForm />
-        </div>
-      </section>
-
-      {/* Right: Hero — 简洁克制 */}
-      <section className="hidden border-l border-line/40 bg-gradient-to-br from-white via-white to-canvas-alt p-16 lg:flex lg:items-center">
-        <div className="mx-auto max-w-md">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-white px-4 py-1.5 text-xs font-medium text-muted shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-            校园内容运营平台
+    <main className="min-h-screen bg-[#fbfbfa]">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1180px] flex-col px-5 pb-10 pt-8 sm:px-8 sm:pt-10 lg:px-12">
+        <header className="flex items-center border-b border-line pb-7">
+          <span className="flex h-11 w-11 items-center justify-center rounded-md bg-brand-900 text-lg font-semibold text-white">
+            校
           </span>
-          <h2 className="mt-6 text-[40px] font-bold leading-[1.15] tracking-tightest text-ink">
-            用真实的
-            <br />
-            <span className="text-ink font-extrabold">学长学姐视角</span>
-            <br />
-            讲好每个学校
-          </h2>
-          <p className="mt-6 max-w-sm text-[15px] leading-7 text-muted">
-            基于学校资料生成非官方校园攻略，自动审核内容风险，发布数据实时回传。
-          </p>
-          <div className="mt-10 grid gap-3">
-            {[
-              { num: "01", title: "以学校资料为基础", desc: "宿舍、食堂、周边，生成真实内容" },
-              { num: "02", title: "风险词自动审核", desc: "不冒充官方，不强制办理" },
-              { num: "03", title: "发布数据回传", desc: "播放、私信、成交，一目了然" },
-            ].map((item) => (
-              <div key={item.num} className="group flex gap-4 rounded-xl border border-transparent bg-white/80 px-4 py-3.5 transition-all hover:border-line/60 hover:bg-white hover:shadow-sm">
-                <span className="text-xs font-bold text-muted-lighter tabular-nums group-hover:text-brand-400 transition-colors">
-                  {item.num}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-ink">{item.title}</p>
-                  <p className="mt-0.5 text-xs text-muted">{item.desc}</p>
+          <span className="ml-3.5 text-lg font-semibold tracking-tight text-ink sm:text-xl">
+            {appName}
+          </span>
+          <span className="mx-3.5 h-5 w-px bg-line" />
+          <span className="text-sm text-muted">团队工作台</span>
+        </header>
+
+        <div className="grid flex-1 items-center gap-16 py-12 lg:grid-cols-[0.92fr_1.08fr] lg:py-16">
+          <section className="mx-auto w-full max-w-[430px] lg:mx-0">
+            <div className="mb-9">
+              <h1 className="text-[32px] font-semibold tracking-heading text-ink sm:text-[38px]">
+                成员登录
+              </h1>
+              <p className="mt-3 flex items-center gap-2.5 text-sm text-muted">
+                <span className="h-2 w-2 rounded-full bg-brand-400" />
+                内容服务运行正常
+              </p>
+            </div>
+            <LoginForm />
+          </section>
+
+          <section className="hidden border-l border-line pl-16 lg:block">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-light">WORKSPACE</p>
+            <h2 className="mt-5 max-w-md text-[34px] font-semibold leading-[1.25] tracking-heading text-ink">
+              从内容生成到发布复盘，
+              <br />
+              保持团队工作清晰有序。
+            </h2>
+            <div className="mt-12 divide-y divide-line border-y border-line">
+              {[
+                ["内容生成", "基于学校资料生成适合校园平台的内容"],
+                ["发布任务", "分配每日任务并跟进团队完成进度"],
+                ["数据回填", "记录播放、线索、加微信与成交结果"],
+              ].map(([title, description], index) => (
+                <div key={title} className="grid grid-cols-[48px_1fr] gap-3 py-5">
+                  <span className="text-xs tabular-nums text-muted-light">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{title}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+
+        <section className="grid grid-cols-3 divide-x divide-line border-t border-line pt-6 text-center lg:hidden">
+          {[
+            ["内容生成", "生成优质内容"],
+            ["发布任务", "安排发布进度"],
+            ["数据回填", "记录转化数据"],
+          ].map(([title, description]) => (
+            <div key={title} className="px-2">
+              <p className="text-[13px] font-medium text-ink">{title}</p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-light">{description}</p>
+            </div>
+          ))}
+        </section>
+      </div>
     </main>
   );
 }

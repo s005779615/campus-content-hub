@@ -4,6 +4,13 @@
 
 :root {
   color-scheme: light;
+  --page-bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-subtle: #f3f3f1;
+  --text: #141414;
+  --text-soft: #3f3f3f;
+  --text-muted: #777773;
+  --border: #deded9;
 }
 
 * {
@@ -12,7 +19,7 @@
 
 html {
   min-height: 100%;
-  background: #f8fafc;
+  background: var(--page-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -20,9 +27,10 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  color: #0f1729;
-  background: #f8fafc;
+  color: var(--text);
+  background: var(--page-bg);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -39,43 +47,40 @@ button:disabled {
 
 /* ── Focus ring ── */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2;
 }
 
 /* ── Form elements ── */
 .form-input {
-  @apply w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition-all duration-200 placeholder:text-muted-light;
+  @apply w-full rounded-lg border border-line bg-canvas-alt px-3.5 py-3 text-sm text-ink outline-none transition-colors duration-150 placeholder:text-muted-light;
 }
 .form-input:hover {
-  @apply border-muted-lighter;
+  @apply border-brand-300;
 }
 .form-input:focus {
-  @apply border-brand-400 ring-2 ring-brand-50 shadow-none;
+  @apply border-brand-700 bg-white ring-2 ring-brand-100;
 }
 
 .form-label {
-  @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted;
+  @apply mb-2 block text-[13px] font-semibold text-ink-soft;
 }
 
 /* ── Panel / card ── */
 .panel {
-  @apply rounded-xl border border-line/60 bg-white shadow-card transition-shadow duration-200;
-}
-.panel:hover {
-  @apply shadow-elevated;
+  @apply rounded-lg border border-line bg-white;
 }
 
 /* ── Buttons ── */
 .button-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-brand-700 hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-brand-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-brand-700 active:bg-black focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2;
 }
 
 .button-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-medium text-ink-soft shadow-sm transition-all duration-200 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-line bg-white px-4 py-2.5 text-sm font-medium text-ink-soft transition-colors duration-150 hover:border-brand-400 hover:bg-canvas-alt hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2;
 }
 
 .button-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-all duration-200 hover:bg-canvas-alt hover:text-ink active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2;
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors duration-150 hover:bg-canvas-alt hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2;
 }
 
 /* ── Subtle gradient background strip ── */
@@ -83,32 +88,25 @@ button:disabled {
   position: relative;
 }
 .gradient-strip-top::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #171717, #525252, #d4d4d4);
-  border-radius: 8px 8px 0 0;
+  content: none;
 }
 
 /* ── Glass morphism for header ── */
 .glass-header {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* ── Decorative icon circle ── */
 .icon-circle {
-  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-md;
 }
 .icon-circle-brand {
-  @apply icon-circle bg-brand-50 text-brand-600;
+  @apply icon-circle bg-canvas-alt text-brand-700;
 }
 .icon-circle-coral {
-  @apply icon-circle bg-coral-50 text-coral-500;
+  @apply icon-circle bg-coral-50 text-coral-600;
 }
 .icon-circle-skyline {
   @apply icon-circle bg-skyline-50 text-skyline-600;
@@ -116,15 +114,15 @@ button:disabled {
 
 /* ── Page section headings ── */
 .section-heading {
-  @apply text-xs font-semibold uppercase tracking-widest text-muted;
+  @apply text-xs font-semibold tracking-wide text-muted;
 }
 
 /* ── Empty state ── */
 .empty-state {
-  @apply flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-line bg-canvas-alt/50 px-6 py-16 text-center;
+  @apply flex flex-col items-center justify-center rounded-lg border border-dashed border-line bg-canvas-alt/50 px-6 py-16 text-center;
 }
 
 /* ── Badge / tag ── */
 .badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium;
 }

@@ -58,7 +58,7 @@ export function TeamManager({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: String(form.get("email") ?? ""),
+        username: String(form.get("username") ?? ""),
         password: String(form.get("password") ?? ""),
         fullName: String(form.get("fullName") ?? "")
       })
@@ -118,15 +118,15 @@ export function TeamManager({
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="panel p-5">
         <h2 className="text-sm font-bold text-ink">创建队员账号</h2>
-        <p className="mt-0.5 text-xs text-muted-light">队员通过邮箱和密码登录后台。</p>
+        <p className="mt-0.5 text-xs text-muted-light">队员用账号名和密码登录。</p>
         <form className="mt-4 space-y-3.5" onSubmit={createMember}>
           <label className="block">
             <span className="form-label">队员姓名</span>
             <input className="form-input mt-1" name="fullName" placeholder="例如：小马" />
           </label>
           <label className="block">
-            <span className="form-label">登录邮箱</span>
-            <input className="form-input mt-1" name="email" type="email" required placeholder="member@example.com" />
+            <span className="form-label">登录账号</span>
+            <input className="form-input mt-1" name="username" required placeholder="英文+数字，如 xiaoma" />
           </label>
           <label className="block">
             <span className="form-label">初始密码</span>
