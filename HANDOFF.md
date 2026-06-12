@@ -1,122 +1,174 @@
-# HANDOFF.md
+# 项目交接文档 — 校园内容中台
 
-## 当前已经完成的功能
+## 项目概述
 
-- Supabase Auth 登录。
-- 管理员和队员角色基础区分。
-- 学校资料管理。
-- 队员账号创建接口。
-- 队员分配学校。
-- 队员按权限查看学校。
-- 小红书内容生成。
-- 抖音脚本生成。
-- 内容保存到内容库。
-- 发布数据回填。
-- 管理员数据看板。
-- 内容风险词检测。
-- 火山方舟/OpenAI 兼容接口调用逻辑。
-- AI 未配置时回退本地模板。
-- Vercel 部署。
+「校园内容中台」是团队内部校园内容运营后台，服务乌鲁木齐校园市场获客。队员基于学校资料，选择 AI 模型生成适合小红书、抖音发布的内容，保存并回填发布数据。管理员监管全局。
 
-## 还没完成的功能
+- **定位**：非官方校园生活攻略号，学长学姐视角，新生避坑攻略
 
-- 视频号完整生成体验仍需继续打磨。
-- 内容日历只完成基础任务能力，还需要更好的按人/学校/日期批量排班。
-- 队员运营账号监管功能未完成，例如上传账号主页、账号截图、发布截图、账号日常检查记录。
-- AI 内容质量还需要优化提示词、去重和结构化输出校验。
-- 生成历史的版本管理、复制记录、发布状态流转还未完善。
-- 移动端体验可用，但还可以继续优化表格和表单密度。
+---
 
-## 当前存在的问题
+## 线上地址
 
-- 本地目录当前不是 Git 工作区，没有 `.git` 目录。
-- 当前机器 PowerShell 里找不到 `git` 命令，所以本地无法直接执行 `git status`、`git commit`、`git push`。
-- 线上 Vercel 环境变量曾在手动配置时测试过豆包和 DeepSeek。后续需要在 Vercel 里确认：
-  - `DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3`
-  - `DOUBAO_MODEL=deepseek-v4-pro-260425` 或当前实际要用的模型 ID
-- DeepSeek V4 Pro 是推理模型，短输出测试时可能先返回 reasoning 内容，正式生成需要确认最终 `message.content` 不为空。
-- 本地终端显示部分中文可能出现乱码，后续建议统一确认文件编码为 UTF-8。
+| 地址 | 说明 |
+|------|------|
+| `https://dxplus.xyz` | 主域名（Vercel 部署） |
+| `https://campus-content-hub.vercel.app` | Vercel 默认域名（需梯子） |
 
-## 最近正在测试什么
+> DNS 在腾讯云 DNSPod，CNAME 指向 `cname.vercel-dns.com`
 
-- 火山方舟接入。
-- 豆包模型和 DeepSeek V4 Pro 模型切换。
-- 线上 `/settings` 页展示 AI Provider、模型和配置状态。
-- 线上 `/generate` 页真实调用 AI 生成内容。
+---
 
-## 哪些地方不要乱改
+## 技术栈
 
-- `lib/supabase/admin.ts`：服务端管理员能力，依赖 service role key。
-- `lib/env.ts`：环境变量读取和校验。
-- `middleware.ts`：登录态路由保护。
-- `database/schema.sql`：表结构、RLS 和策略。
-- `lib/content-policy.ts`：合规风险词逻辑。
-- `app/api/team-members/route.ts`：创建队员账号，不能改成前端直接创建。
-- `app/api/generate/route.ts` 和 `lib/content-generator.ts`：AI Key 必须只在服务端使用。
+- 前端：Next.js App Router + React + Tailwind CSS
+- 后端：Next.js Route Handlers
+- 数据库：Supabase PostgreSQL (`https://hqpgzdjzyhzipnxgomkm.supabase.co`)
+- 登录认证：Supabase Auth（邮箱密码登录）
+- AI 生成：火山方舟 OpenAI 兼容接口 (`https://ark.cn-beijing.volces.com/api/v3`)
+- 部署：Vercel（自动从 GitHub `main` 分支部署）
+- GitHub：`https://github.com/s005779615/campus-content-hub`
 
-## 部署平台
+---
 
-- Vercel
-- 线上地址：https://campus-content-hub.vercel.app
-- 数据库和认证：Supabase
+## 部署注意事项
 
-## 前端和后端分别怎么部署
+⚠️ **重要**：Vercel 从 GitHub 的 `main` 分支自动部署，不是 `master`。推送代码必须推到 `main`。
 
-这是一个 Next.js 全栈项目，前端页面和后端 API 一起部署到 Vercel。
+⚠️ **重要**：本地 Vercel CLI 不可用（电脑主机名含中文导致登录失败）。所有部署都通过 git push 触发。
 
-本地：
+⚠️ **重要**：GitHub 在国内不稳定，push 代码时需要开梯子。
+
+---
+
+## 环境变量（Vercel 已配置）
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://hqpgzdjzyhzipnxgomkm.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[Supabase anon key]
+SUPABASE_SERVICE_ROLE_KEY=[Supabase service role key]
+AI_PROVIDER=doubao
+DOUBAO_API_KEY=ark-37848c2e-d534-4625-b36f-3a5eefd71c6f-765a0
+DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+DOUBAO_MODEL=deepseek-v4-pro-260425
+```
+
+---
+
+## 可用 AI 模型（2个）
+
+| 显示名 | 模型 ID | 说明 |
+|--------|---------|------|
+| 深度爆款版 | `deepseek-v4-pro-260425` | DeepSeek 推理模型，质量高但慢（30-60秒） |
+| 校园灵感版 | `doubao-seed-2-0-lite-260215` | 豆包轻量模型，快，适合日常 |
+
+> 火山方舟端点确认：深度爆款版 `ep-m-20260609013439-9lb6l`，校园灵感版 `ep-m-20260610011030-zxkwn`
+> 代码有智能推荐：校园生活类→豆包，深度分析类→DeepSeek Pro
+
+---
+
+## 数据库表
+
+### profiles
+- `id` uuid PK, `email`, `full_name`, `avatar_url`, `role` (admin/member)
+
+### schools
+- `id`, `name`, `campus_name`, `city`, `dormitory_info`, `cafeteria_info`, `nearby_food`, `nearby_fun`, `registration_notes`, `essentials`, `campus_card_notes`, `bedding_scenarios`, `freshman_faq`, `banned_phrases`
+
+### platform_accounts（新增）
+- `id`, `user_id` FK, `school_id` FK, `platform` (抖音/小红书), `account_name`, `account_id`, `account_password`, `account_link`, `notes`
+- 唯一约束：`(user_id, school_id, platform)`
+
+### content_records
+- 保存的生成内容，关联学校和用户
+
+### publication_records
+- 发布数据回填：播放量、点赞、收藏、评论、私信、加微信、成交
+
+### publish_tasks
+- 管理员为队员分配的发布任务
+
+### school_assignments
+- `user_id` + `school_id`，队员→学校绑定
+
+---
+
+## 页面路由
+
+| 路由 | 页面 | 说明 |
+|------|------|------|
+| `/login` | 登录页 | 黑白高级色，右侧 Hero + 编号卡片 |
+| `/dashboard` | 仪表盘 | 欢迎横幅 + 统计卡片 + 最近内容 + 今日任务 |
+| `/generate` | 内容生成 | 模型选择器 + 参数表单 + 智能推荐 ⭐ |
+| `/accounts` | 平台账号 | 队员管理各学校的抖音/小红书账号（含密码复制） |
+| `/library` | 内容库 | 按平台+学校筛选，查看生成内容，回填发布数据 |
+| `/tasks` | 发布任务 | 管理员创建任务，队员勾选完成 |
+| `/schools` | 学校管理 | 维护学校资料表单 |
+| `/team` | 队员管理 | 创建队员 + 学校分配 |
+| `/analytics` | 数据看板 | 学校/队员/平台统计 + 转化表 |
+| `/settings` | 设置页 | 账号信息 + 头像上传 + AI 引擎状态 + 审核规则 |
+
+---
+
+## 当前配色
+
+**黑白高级色调**（最新 commit `286ea2e`）：
+- brand 色：绿色 → 炭黑灰阶 (50-900)
+- 按钮/链接/高亮统一黑灰
+- 渐变从绿色改为黑灰色
+- 68 处 brand- 引用全部自动级联
+
+---
+
+## 已修复的问题
+
+1. ✅ Vercel 部署分支：main vs master（已统一推 main）
+2. ✅ 豆包模型 ID 格式：需带日期后缀 `-260215`
+3. ✅ 极速版移除：火山方舟未创建端点
+4. ✅ DOUBAO_BASE_URL 误填防护：非 http 开头自动回退
+5. ✅ DeepSeek 超时：60 秒 + thinking 参数
+6. ✅ React #31 崩溃：全字段 safeItem 防护
+7. ✅ 错误对象渲染：error.message 安全提取
+8. ✅ DNS：dxplus.xyz → Vercel CNAME
+
+---
+
+## 未完成/可优化
+
+1. 视频号完整生成体验
+2. 内容日历批量排期
+3. 队员运营账号截图、日常检查记录
+4. 移动端列表卡片优化
+5. EdgeOne Pages 部署（域名已买但放弃，不稳定）
+6. 抖音/小红书 OAuth 登录
+7. 提示词持续优化
+
+---
+
+## 快速上手
 
 ```bash
 npm install
-npm run dev
+npm run dev    # 本地开发 → http://localhost:3000
+npm run build  # 构建检查
 ```
 
-生产构建：
+修改代码 → commit → push origin main → Vercel 自动部署 → 访问 dxplus.xyz
 
-```bash
-npm run build
-npm run start
-```
+---
 
-Vercel：
+## 关键文件索引
 
-1. GitHub 仓库连接 Vercel 项目。
-2. 在 Vercel Environment Variables 配置 Supabase 和 AI 变量。
-3. 每次 push 到 GitHub 后触发部署。
-4. 修改环境变量后需要重新部署。
-
-## 如果后续修改 UI，应该改哪些文件
-
-- 全局样式：`app/globals.css`
-- 后台布局：`components/app-shell.tsx`
-- 页面标题：`components/page-header.tsx`
-- 登录页：`app/login/page.tsx`、`app/login/login-form.tsx`
-- 学校管理：`app/(app)/schools/school-manager.tsx`
-- 队员管理：`app/(app)/team/team-manager.tsx`
-- 内容生成：`app/(app)/generate/page.tsx`、`app/(app)/generate/generate-client.tsx`
-- 内容库：`app/(app)/library/page.tsx`、`app/(app)/library/content-library.tsx`
-- 任务页：`app/(app)/tasks/page.tsx`、`app/(app)/tasks/tasks-client.tsx`
-- 数据看板：`app/(app)/analytics/page.tsx`
-- 设置页：`app/(app)/settings/page.tsx`
-
-## Git/GitHub 当前状态
-
-当前本地目录没有 `.git`，并且系统 PATH 中没有 `git` 命令。因此本次交接只能生成代码文件和文档，无法在本机完成真实 `git commit` / `git push`。
-
-Claude Code 接手后建议：
-
-```bash
-git clone <GitHub 仓库地址>
-```
-
-然后把当前项目文件合并进去，或在安装 Git 后执行：
-
-```bash
-git init
-git remote add origin <GitHub 仓库地址>
-git add .
-git commit -m "save current project handoff state"
-git push -u origin main
-```
-
-执行前请确认 `.gitignore` 生效，避免提交 `.env`、截图、压缩包、`node_modules` 和 `.next`。
+| 文件 | 作用 |
+|------|------|
+| `lib/content-generator.ts` | AI 模型注册 + 调用逻辑 + 提示词 |
+| `lib/auth.ts` | 登录认证 + 角色判断 |
+| `lib/constants.ts` | 导航菜单 + 平台/内容类型常量 |
+| `lib/types.ts` | TypeScript 类型定义 |
+| `lib/content-policy.ts` | 风险词审核 |
+| `app/(app)/generate/generate-client.tsx` | 生成页核心（模型选择+智能推荐） |
+| `components/app-shell.tsx` | 全局布局（Header+侧边栏+Logo） |
+| `components/content-output.tsx` | 生成结果展示（safeItem 渲染） |
+| `database/schema.sql` | 完整数据库结构 + RLS |
+| `tailwind.config.ts` | 配色 + 字体 + 阴影 + 动画 |
+| `app/globals.css` | 全局样式 + 组件类 |
