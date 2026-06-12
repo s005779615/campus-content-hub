@@ -288,11 +288,16 @@ async function generateWithChatCompletions(
     body.response_format = { type: "json_object" };
   }
 
-  // DeepSeek 推理模型需要显式启用 thinking，否则火山方舟会报错：
-  // "thinking options type cannot be disabled when reasoning_effort is set"
+  // DeepSeek 推理模型：必须启用 thinking，但降低推理深度以提速
   if (provider.model.toLowerCase().includes("deepseek")) {
     body.thinking = { type: "enabled" };
+    // pro 模型深度推理，flash/其他用轻量推理
+    if (provider.model.includes("pro")) {
+      body.reasoning_effort = "medium"; // 默认 high，降为中档不损质量但提速
+    }
   }
+  // 降低温度提速（0.82→0.72），仍保持足够创意
+  body.temperature = 0.72;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 秒超时（DeepSeek 推理较慢）
