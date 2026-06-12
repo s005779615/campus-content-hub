@@ -72,8 +72,15 @@ export async function POST(request: Request) {
     });
 
     if (createError || !created.user) {
+      const msg = createError?.message ?? "";
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists") || msg.includes("已被")) {
+        return NextResponse.json(
+          { error: `邮箱 ${body.email} 已注册过，请换一个邮箱或让队员直接登录。` },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
-        { error: createError?.message ?? "Failed to create user" },
+        { error: msg || "创建队员失败" },
         { status: 400 }
       );
     }
