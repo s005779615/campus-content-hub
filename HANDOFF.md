@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-「校园内容中台」是团队内部校园内容运营后台，服务乌鲁木齐校园市场获客。队员基于学校资料，选择 AI 模型生成适合小红书、抖音发布的内容，保存并回填发布数据。管理员监管全局。
+「校园内容中台」是团队内部校园内容运营后台，服务乌鲁木齐校园市场获客。校区负责人基于学校资料生成内容、完成发布并回填数据，管理员监管全局。
 
 - **定位**：非官方校园生活攻略号，学长学姐视角，新生避坑攻略
 
@@ -71,22 +71,28 @@ DOUBAO_MODEL=deepseek-v4-pro-260425
 
 ### profiles
 - `id` uuid PK, `email`, `full_name`, `avatar_url`, `role` (admin/member)
+- 两级角色：管理员（项目负责人本人）与校区负责人
 
 ### schools
 - `id`, `name`, `campus_name`, `city`, `dormitory_info`, `cafeteria_info`, `nearby_food`, `nearby_fun`, `registration_notes`, `essentials`, `campus_card_notes`, `bedding_scenarios`, `freshman_faq`, `banned_phrases`
 
-### platform_accounts（新增）
-- `id`, `user_id` FK, `school_id` FK, `platform` (抖音/小红书), `account_name`, `account_id`, `account_password`, `account_link`, `notes`
+### platform_accounts
+- `id`, `user_id` FK, `school_id` FK, `platform` (抖音/小红书/视频号), `account_name`, `account_positioning`, `daily_publish_target`, `status`, `account_id`, `account_password`, `account_link`, `notes`
 - 唯一约束：`(user_id, school_id, platform)`
 
 ### content_records
 - 保存的生成内容，关联学校和用户
 
 ### publication_records
-- 发布数据回填：播放量、点赞、收藏、评论、私信、加微信、成交
+- 发布数据回填：播放量、评论、私信、加微信、有效咨询、成交人数、成交金额、备注
 
 ### publish_tasks
-- 管理员为队员分配的发布任务
+- 管理员为校区负责人分配的发布任务
+- 状态：未开始、已生成、待发布、已发布、已回填、已复盘、异常
+- 关联平台账号、生成内容、发布截图和复盘结论
+
+### task_events
+- 记录任务状态流转历史
 
 ### school_assignments
 - `user_id` + `school_id`，队员→学校绑定
@@ -98,13 +104,13 @@ DOUBAO_MODEL=deepseek-v4-pro-260425
 | 路由 | 页面 | 说明 |
 |------|------|------|
 | `/login` | 登录页 | 黑白高级色，右侧 Hero + 编号卡片 |
-| `/dashboard` | 仪表盘 | 欢迎横幅 + 统计卡片 + 最近内容 + 今日任务 |
+| `/dashboard` | 仪表盘 | 管理员团队监管；负责人个人工作台 |
 | `/generate` | 内容生成 | 模型选择器 + 参数表单 + 智能推荐 ⭐ |
-| `/accounts` | 平台账号 | 队员管理各学校的抖音/小红书账号（含密码复制） |
+| `/accounts` | 校园分配 | 管理员分配学校、负责人、平台账号与每日目标 |
 | `/library` | 内容库 | 按平台+学校筛选，查看生成内容，回填发布数据 |
-| `/tasks` | 发布任务 | 管理员创建任务，队员勾选完成 |
+| `/tasks` | 发布任务 | 生成、待发布、截图上传、回填、复盘任务流 |
 | `/schools` | 学校管理 | 维护学校资料表单 |
-| `/team` | 队员管理 | 创建队员 + 学校分配 |
+| `/team` | 校区负责人 | 创建负责人 + 学校分配 |
 | `/analytics` | 数据看板 | 学校/队员/平台统计 + 转化表 |
 | `/settings` | 设置页 | 账号信息 + 头像上传 + AI 引擎状态 + 审核规则 |
 
@@ -133,12 +139,24 @@ DOUBAO_MODEL=deepseek-v4-pro-260425
 
 ---
 
+## 数据库迁移
+
+本次业务工作流升级需要执行：
+
+```sql
+database/migrations/20260613_operations_workflow.sql
+```
+
+迁移增加任务状态流、发布截图、有效咨询、成交金额、账号定位与每日目标，并更新两级角色 RLS。
+
+---
+
 ## 未完成/可优化
 
 1. 视频号完整生成体验
 2. 内容日历批量排期
-3. 队员运营账号截图、日常检查记录
-4. 移动端列表卡片优化
+3. 发布截图长期归档策略
+4. 仪表盘图表维度继续扩展
 5. EdgeOne Pages 部署（域名已买但放弃，不稳定）
 6. 抖音/小红书 OAuth 登录
 7. 提示词持续优化

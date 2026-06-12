@@ -105,11 +105,13 @@ create index if not exists idx_publications_task on public.publication_records(t
 alter table public.task_events enable row level security;
 
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
+drop policy if exists "profiles_select_visible" on public.profiles;
 create policy "profiles_select_visible"
 on public.profiles for select to authenticated
 using (public.can_view_user(id));
 
 drop policy if exists "schools_select_assigned_or_admin" on public.schools;
+drop policy if exists "schools_select_visible" on public.schools;
 create policy "schools_select_visible"
 on public.schools for select to authenticated
 using (
@@ -122,26 +124,46 @@ using (
 );
 
 drop policy if exists "assignments_select_self_or_admin" on public.school_assignments;
+drop policy if exists "assignments_select_visible" on public.school_assignments;
 create policy "assignments_select_visible"
 on public.school_assignments for select to authenticated
 using (public.can_view_user(user_id));
 
 drop policy if exists "content_select_self_or_admin" on public.content_records;
+drop policy if exists "content_select_visible" on public.content_records;
 create policy "content_select_visible"
 on public.content_records for select to authenticated
 using (public.can_view_user(user_id));
 
+drop policy if exists "content_insert_self_assigned" on public.content_records;
+create policy "content_insert_self_assigned"
+on public.content_records for insert to authenticated
+with check (
+  public.is_admin()
+  or (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.school_assignments sa
+      where sa.school_id = content_records.school_id
+        and sa.user_id = auth.uid()
+    )
+  )
+);
+
 drop policy if exists "publication_select_self_or_admin" on public.publication_records;
+drop policy if exists "publication_select_visible" on public.publication_records;
 create policy "publication_select_visible"
 on public.publication_records for select to authenticated
 using (public.can_view_user(user_id));
 
 drop policy if exists "tasks_select_self_or_admin" on public.publish_tasks;
+drop policy if exists "tasks_select_visible" on public.publish_tasks;
 create policy "tasks_select_visible"
 on public.publish_tasks for select to authenticated
 using (public.can_view_user(user_id));
 
 drop policy if exists "tasks_insert_admin" on public.publish_tasks;
+drop policy if exists "tasks_insert_manager" on public.publish_tasks;
 create policy "tasks_insert_manager"
 on public.publish_tasks for insert to authenticated
 with check (
@@ -149,11 +171,13 @@ with check (
 );
 
 drop policy if exists "accounts_select_own_or_admin" on public.platform_accounts;
+drop policy if exists "accounts_select_visible" on public.platform_accounts;
 create policy "accounts_select_visible"
 on public.platform_accounts for select to authenticated
 using (public.can_view_user(user_id));
 
 drop policy if exists "accounts_insert_own" on public.platform_accounts;
+drop policy if exists "accounts_insert_manager" on public.platform_accounts;
 create policy "accounts_insert_manager"
 on public.platform_accounts for insert to authenticated
 with check (
@@ -161,12 +185,14 @@ with check (
 );
 
 drop policy if exists "accounts_update_own" on public.platform_accounts;
+drop policy if exists "accounts_update_manager" on public.platform_accounts;
 create policy "accounts_update_manager"
 on public.platform_accounts for update to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
 drop policy if exists "accounts_delete_own" on public.platform_accounts;
+drop policy if exists "accounts_delete_manager" on public.platform_accounts;
 create policy "accounts_delete_manager"
 on public.platform_accounts for delete to authenticated
 using (public.is_admin());

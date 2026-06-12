@@ -5,9 +5,13 @@ import { requireAuth } from "@/lib/auth";
 import type { PlatformAccount, Profile, SchoolRecord, TaskRecord } from "@/lib/types";
 import { TasksClient } from "./tasks-client";
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const { supabase, profile } = await requireAuth();
-  const today = new Date().toISOString().slice(0, 10);
+  const { status } = await searchParams;
 
   const [{ data: tasks }, { data: schools }, { data: members }, { data: accounts }] = await Promise.all([
     supabase
@@ -59,6 +63,7 @@ export default async function TasksPage() {
           members={members ?? []}
           accounts={accounts ?? []}
           role={profile.role}
+          initialStatus={status}
         />
       ) : (
         <EmptyState

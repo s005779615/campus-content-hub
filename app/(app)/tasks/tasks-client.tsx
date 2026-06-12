@@ -42,13 +42,15 @@ export function TasksClient({
   schools,
   members,
   accounts,
-  role
+  role,
+  initialStatus
 }: {
   tasks: TaskRecord[];
   schools: SchoolRecord[];
   members: Profile[];
   accounts: PlatformAccount[];
   role: UserRole;
+  initialStatus?: string;
 }) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -57,7 +59,9 @@ export function TasksClient({
     date: "",
     schoolId: "全部",
     memberId: "全部",
-    status: "全部"
+    status: (taskStatuses as readonly string[]).includes(initialStatus ?? "")
+      ? initialStatus ?? "全部"
+      : "全部"
   });
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);

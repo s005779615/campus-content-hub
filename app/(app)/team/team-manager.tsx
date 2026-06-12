@@ -117,11 +117,11 @@ export function TeamManager({
   return (
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="panel p-5">
-        <h2 className="text-sm font-bold text-ink">创建队员账号</h2>
-        <p className="mt-0.5 text-xs text-muted-light">队员用账号名和密码登录。</p>
+        <h2 className="text-sm font-bold text-ink">创建负责人账号</h2>
+        <p className="mt-0.5 text-xs text-muted-light">校区负责人用账号名和密码登录。</p>
         <form className="mt-4 space-y-3.5" onSubmit={createMember}>
           <label className="block">
-            <span className="form-label">队员姓名</span>
+            <span className="form-label">负责人姓名</span>
             <input className="form-input mt-1" name="fullName" placeholder="例如：小马" />
           </label>
           <label className="block">
@@ -146,7 +146,7 @@ export function TeamManager({
           ) : null}
           <button className="button-primary w-full" disabled={creating} type="submit">
             {creating ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
-            创建队员
+            创建负责人
           </button>
         </form>
       </section>
@@ -154,7 +154,7 @@ export function TeamManager({
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
           <h2 className="text-sm font-bold text-ink">学校分配</h2>
-          <span className="text-[11px] text-muted-light">{members.length} 名队员</span>
+          <span className="text-[11px] text-muted-light">{members.length} 名负责人</span>
         </div>
         <div className="divide-y divide-line/50">
           {members.length ? (
@@ -226,7 +226,7 @@ export function TeamManager({
             ))
           ) : (
             <div className="px-5 py-10 text-center text-[13px] text-muted-light">
-              还没有队员账号。
+              还没有负责人账号。
             </div>
           )}
         </div>

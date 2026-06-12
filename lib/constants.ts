@@ -93,7 +93,7 @@ export const navItems = [
   { href: "/library", label: "内容库", icon: FileText },
   { href: "/tasks", label: "发布任务", icon: CalendarDays },
   { href: "/schools", label: "学校管理", icon: School },
-  { href: "/team", label: "队员管理", icon: UsersRound, adminOnly: true },
+  { href: "/team", label: "校区负责人", icon: UsersRound, adminOnly: true },
   { href: "/analytics", label: "数据看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
 ] satisfies readonly NavItem[];

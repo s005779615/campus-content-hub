@@ -27,8 +27,8 @@ export default async function TeamPage() {
   return (
     <>
       <PageHeader
-        title="队员分配"
-        description="创建队员账号，并把队员绑定到负责的学校。队员登录后只能看到自己负责的学校。"
+        title="校区负责人"
+        description="创建负责人账号，并绑定负责学校。负责人登录后只能看到自己的学校、任务和数据。"
       />
       <TeamManager
         members={members ?? []}
