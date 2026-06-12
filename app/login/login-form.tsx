@@ -26,23 +26,27 @@ export function LoginForm() {
       return;
     }
 
-    // 将账号名映射为内部邮箱
-    const email = `u_${username}@campus.local`;
-
     try {
       const supabase = createSupabaseBrowserClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
 
-      if (signInError) {
-        setError("账号或密码不正确，请检查后再试。");
-        return;
+      // 如果含 @ 直接用，否则先试内部账号映射，再试原始输入（兼容管理员真实邮箱）
+      const emails = username.includes("@")
+        ? [username]
+        : [`u_${username}@campus.local`, username];
+
+      let signInError: unknown;
+      for (const email of emails) {
+        const result = await supabase.auth.signInWithPassword({ email, password });
+        if (!result.error) {
+          // 登录成功
+          router.replace("/dashboard");
+          router.refresh();
+          return;
+        }
+        signInError = result.error;
       }
 
-      router.replace("/dashboard");
-      router.refresh();
+      setError("账号或密码不正确，请检查后再试。");
     } catch {
       setError("登录服务未配置完成，请检查环境变量。");
     } finally {

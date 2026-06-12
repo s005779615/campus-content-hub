@@ -1,0 +1,18 @@
+
+> campus-content-hub@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.19
+   - Local:        http://localhost:3000
+   - Network:      http://172.16.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.7s
+ ✓ Compiled /middleware in 377ms (168 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.9s (765 modules)
+ GET /login 200 in 3437ms
+ ✓ Compiled in 607ms (765 modules)
+ ✓ Compiled in 342ms (765 modules)
+ ✓ Compiled in 417ms (765 modules)
