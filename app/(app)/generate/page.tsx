@@ -3,17 +3,31 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { requireAuth } from "@/lib/auth";
 import { getAiProviderStatus } from "@/lib/content-generator";
-import type { SchoolRecord } from "@/lib/types";
+import type { SchoolRecord, TaskRecord } from "@/lib/types";
 import { GenerateClient } from "./generate-client";
 
-export default async function GeneratePage() {
+export default async function GeneratePage({
+  searchParams
+}: {
+  searchParams: Promise<{ taskId?: string }>;
+}) {
   const { supabase } = await requireAuth();
+  const { taskId } = await searchParams;
   const aiStatus = getAiProviderStatus();
-  const { data: schools } = await supabase
-    .from("schools")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<SchoolRecord[]>();
+  const [{ data: schools }, { data: task }] = await Promise.all([
+    supabase
+      .from("schools")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .returns<SchoolRecord[]>(),
+    taskId
+      ? supabase
+          .from("publish_tasks")
+          .select("*")
+          .eq("id", taskId)
+          .single<TaskRecord>()
+      : Promise.resolve({ data: null as TaskRecord | null })
+  ]);
 
   return (
     <>
@@ -23,7 +37,7 @@ export default async function GeneratePage() {
       />
 
       {(schools ?? []).length ? (
-        <GenerateClient aiStatus={aiStatus} schools={schools ?? []} />
+        <GenerateClient aiStatus={aiStatus} schools={schools ?? []} initialTask={task ?? null} />
       ) : (
         <EmptyState
           icon={WandSparkles}

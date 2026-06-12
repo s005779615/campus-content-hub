@@ -49,3 +49,7 @@ export async function requireAdmin() {
 export function isAdmin(profile: Pick<Profile, "role">) {
   return profile.role === "admin";
 }
+
+export function isManager(profile: Pick<Profile, "role">) {
+  return profile.role === "admin";
+}

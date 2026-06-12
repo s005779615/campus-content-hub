@@ -5,13 +5,23 @@ import { requireAuth } from "@/lib/auth";
 import type { ContentRecord } from "@/lib/types";
 import { ContentLibrary } from "./content-library";
 
-export default async function LibraryPage() {
+export default async function LibraryPage({
+  searchParams
+}: {
+  searchParams: Promise<{ taskId?: string }>;
+}) {
   const { supabase, profile } = await requireAuth();
-  const { data: contents } = await supabase
+  const { taskId } = await searchParams;
+  let query = supabase
     .from("content_records")
     .select("*,schools(name,campus_name,city),profiles(full_name,email),publication_records(*)")
-    .order("created_at", { ascending: false })
-    .returns<ContentRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (taskId) {
+    query = query.eq("task_id", taskId);
+  }
+
+  const { data: contents } = await query.returns<ContentRecord[]>();
 
   return (
     <>
@@ -25,7 +35,7 @@ export default async function LibraryPage() {
       />
 
       {(contents ?? []).length ? (
-        <ContentLibrary contents={contents ?? []} />
+        <ContentLibrary contents={contents ?? []} activeTaskId={taskId} />
       ) : (
         <EmptyState
           icon={FileText}

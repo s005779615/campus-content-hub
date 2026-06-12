@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/auth";
+import { getAuthContext, isManager } from "@/lib/auth";
+import { contentTypes, platforms } from "@/lib/constants";
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +14,9 @@ export async function GET(request: Request) {
     const date = searchParams.get("date");
     let query = context.supabase
       .from("publish_tasks")
-      .select("*,schools(name,campus_name),profiles(full_name,email)")
+      .select(
+        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+      )
       .order("task_date", { ascending: false });
 
     if (date) {
@@ -43,29 +46,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (context.profile.role !== "admin") {
+    if (!isManager(context.profile)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = (await request.json()) as {
-      userId: string;
-      schoolId?: string;
+      platformAccountId: string;
       taskDate: string;
-      requiredCount: number;
+      contentType: string;
       note?: string;
     };
+
+    if (
+      !body.platformAccountId ||
+      !body.taskDate ||
+      !(contentTypes as readonly string[]).includes(body.contentType)
+    ) {
+      return NextResponse.json({ error: "任务信息不完整。" }, { status: 400 });
+    }
+
+    const { data: account, error: accountError } = await context.supabase
+      .from("platform_accounts")
+      .select("id,user_id,school_id,platform")
+      .eq("id", body.platformAccountId)
+      .eq("status", "启用")
+      .single();
+
+    if (accountError || !account || !(platforms as readonly string[]).includes(account.platform)) {
+      return NextResponse.json({ error: "账号不存在或当前不可用。" }, { status: 400 });
+    }
 
     const { data, error } = await context.supabase
       .from("publish_tasks")
       .insert({
-        user_id: body.userId,
-        school_id: body.schoolId || null,
+        user_id: account.user_id,
+        school_id: account.school_id,
         task_date: body.taskDate,
-        required_count: Number(body.requiredCount || 1),
+        required_count: 1,
+        platform: account.platform,
+        content_type: body.contentType,
+        platform_account_id: account.id,
+        status: "未开始",
         note: body.note || null,
         created_by: context.user.id
       })
-      .select("*")
+      .select(
+        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+      )
       .single();
 
     if (error) {

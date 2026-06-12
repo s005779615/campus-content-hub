@@ -131,7 +131,7 @@ export function AppShell({
                   {profile.full_name || profile.email}
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-light">
-                  {profile.role === "admin" ? "管理员" : "团队成员"}
+                  {profile.role === "admin" ? "管理员" : "校区负责人"}
                 </p>
               </div>
               <button
@@ -182,7 +182,7 @@ export function AppShell({
                       {profile.full_name || profile.email}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-light">
-                      {profile.role === "admin" ? "管理员" : "团队成员"}
+                      {profile.role === "admin" ? "管理员" : "校区负责人"}
                     </p>
                   </div>
                   <button

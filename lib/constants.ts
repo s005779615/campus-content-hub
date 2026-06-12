@@ -19,15 +19,32 @@ export const platforms = ["小红书", "抖音", "视频号"] as const;
 export const mvpPlatforms = ["小红书", "抖音"] as const;
 
 export const contentTypes = [
+  "吃喝玩乐",
   "宿舍攻略",
-  "开学清单",
-  "校园周边",
-  "食堂测评",
-  "新生避坑",
+  "新生开学",
   "校园卡",
-  "被子床品",
-  "军训用品",
-  "学长学姐建议"
+  "被子生活用品",
+  "驾校",
+  "二手书",
+  "兼职",
+  "校园避坑"
+] as const;
+
+export const taskStatuses = [
+  "未开始",
+  "已生成",
+  "待发布",
+  "已发布",
+  "已回填",
+  "已复盘",
+  "异常"
+] as const;
+
+export const accountPositionings = [
+  "学长号",
+  "校园墙",
+  "校园生活号",
+  "新生攻略号"
 ] as const;
 
 export const contentGoals = ["涨粉", "私信咨询", "加微信", "成交转化"] as const;
@@ -72,7 +89,7 @@ type NavItem = {
 export const navItems = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
   { href: "/generate", label: "内容生成", icon: WandSparkles },
-  { href: "/accounts", label: "平台账号", icon: Smartphone },
+  { href: "/accounts", label: "校园分配", icon: Smartphone },
   { href: "/library", label: "内容库", icon: FileText },
   { href: "/tasks", label: "发布任务", icon: CalendarDays },
   { href: "/schools", label: "学校管理", icon: School },

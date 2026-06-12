@@ -2,19 +2,21 @@ import { CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { requireAuth } from "@/lib/auth";
-import type { Profile, SchoolRecord, TaskRecord } from "@/lib/types";
+import type { PlatformAccount, Profile, SchoolRecord, TaskRecord } from "@/lib/types";
 import { TasksClient } from "./tasks-client";
 
 export default async function TasksPage() {
   const { supabase, profile } = await requireAuth();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: tasks }, { data: schools }, { data: members }] = await Promise.all([
+  const [{ data: tasks }, { data: schools }, { data: members }, { data: accounts }] = await Promise.all([
     supabase
       .from("publish_tasks")
-      .select("*,schools(name,campus_name),profiles(full_name,email)")
-      .gte("task_date", today)
-      .order("task_date", { ascending: true })
+      .select(
+        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+      )
+      .order("task_date", { ascending: false })
+      .limit(200)
       .returns<TaskRecord[]>(),
     supabase
       .from("schools")
@@ -28,7 +30,15 @@ export default async function TasksPage() {
           .eq("role", "member")
           .order("created_at", { ascending: false })
           .returns<Profile[]>()
-      : Promise.resolve({ data: [] as Profile[] })
+      : Promise.resolve({ data: [] as Profile[] }),
+    profile.role === "admin"
+      ? supabase
+          .from("platform_accounts")
+          .select("*,schools(name,campus_name,city),profiles(full_name,email,role)")
+          .eq("status", "启用")
+          .order("account_name")
+          .returns<PlatformAccount[]>()
+      : Promise.resolve({ data: [] as PlatformAccount[] })
   ]);
 
   return (
@@ -37,8 +47,8 @@ export default async function TasksPage() {
         title="发布任务"
         description={
           profile.role === "admin"
-            ? "设置每个队员每天需要发布的内容数量，并按学校、队员、日期筛选。"
-            : "查看自己的今日和未来发布任务，完成后勾选已完成。"
+            ? "按校区账号分配每日内容任务，并监管生成、发布、回填和复盘进度。"
+            : "按步骤完成今天的内容任务，发布后上传截图并回填数据。"
         }
       />
 
@@ -47,6 +57,7 @@ export default async function TasksPage() {
           tasks={tasks ?? []}
           schools={schools ?? []}
           members={members ?? []}
+          accounts={accounts ?? []}
           role={profile.role}
         />
       ) : (

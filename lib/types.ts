@@ -1,5 +1,15 @@
 export type UserRole = "admin" | "member";
 export type Platform = "小红书" | "抖音" | "视频号";
+export type TaskStatus =
+  | "未开始"
+  | "已生成"
+  | "待发布"
+  | "已发布"
+  | "已回填"
+  | "已复盘"
+  | "异常";
+export type AccountPositioning = "学长号" | "校园墙" | "校园生活号" | "新生攻略号";
+export type AccountStatus = "启用" | "暂停" | "异常";
 
 export type Profile = {
   id: string;
@@ -45,7 +55,8 @@ export type ContentRecord = {
   tone: string;
   output: GeneratedOutput;
   risk_hits: RiskHit[];
-  status: "draft" | "saved";
+  status: "draft" | "saved" | TaskStatus;
+  task_id?: string | null;
   created_at: string;
   schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
@@ -67,6 +78,10 @@ export type PublicationRecord = {
   private_messages: number;
   wechat_adds: number;
   conversions: number;
+  valid_inquiries: number;
+  revenue: number;
+  task_id?: string | null;
+  screenshot_url?: string | null;
   notes: string | null;
   created_at: string;
   schools?: Pick<SchoolRecord, "name" | "campus_name"> | null;
@@ -82,10 +97,40 @@ export type TaskRecord = {
   required_count: number;
   completed_count: number;
   is_done: boolean;
+  platform: Platform | null;
+  content_type: string | null;
+  platform_account_id: string | null;
+  content_id: string | null;
+  status: TaskStatus;
+  publish_screenshot_url: string | null;
+  review_notes: string | null;
+  reviewed_at: string | null;
   note: string | null;
   created_at: string;
   schools?: Pick<SchoolRecord, "name" | "campus_name"> | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
+  platform_accounts?: Pick<
+    PlatformAccount,
+    "account_name" | "account_positioning" | "platform"
+  > | null;
+};
+
+export type PlatformAccount = {
+  id: string;
+  user_id: string;
+  school_id: string;
+  platform: Platform;
+  account_name: string;
+  account_id: string | null;
+  account_password: string | null;
+  account_link: string | null;
+  account_positioning: AccountPositioning;
+  daily_publish_target: number;
+  status: AccountStatus;
+  notes: string | null;
+  created_at: string;
+  schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
+  profiles?: Pick<Profile, "full_name" | "email" | "role"> | null;
 };
 
 export type RiskHit = {
@@ -134,4 +179,5 @@ export type GeneratePayload = {
   contentGoal: string;
   tone: string;
   model?: string;
+  taskId?: string;
 };

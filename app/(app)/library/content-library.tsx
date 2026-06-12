@@ -10,7 +10,13 @@ import { platforms } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import type { ContentRecord } from "@/lib/types";
 
-export function ContentLibrary({ contents }: { contents: ContentRecord[] }) {
+export function ContentLibrary({
+  contents,
+  activeTaskId
+}: {
+  contents: ContentRecord[];
+  activeTaskId?: string;
+}) {
   const [platform, setPlatform] = useState("全部");
   const [school, setSchool] = useState("全部");
 
@@ -60,14 +66,20 @@ export function ContentLibrary({ contents }: { contents: ContentRecord[] }) {
 
       <div className="space-y-4">
         {filtered.map((content) => (
-          <ContentCard key={content.id} content={content} />
+          <ContentCard key={content.id} content={content} activeTaskId={activeTaskId} />
         ))}
       </div>
     </div>
   );
 }
 
-function ContentCard({ content }: { content: ContentRecord }) {
+function ContentCard({
+  content,
+  activeTaskId
+}: {
+  content: ContentRecord;
+  activeTaskId?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [showPublish, setShowPublish] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -84,6 +96,9 @@ function ContentCard({ content }: { content: ContentRecord }) {
 
     const form = new FormData(event.currentTarget);
     form.set("contentId", content.id);
+    if (activeTaskId || content.task_id) {
+      form.set("taskId", activeTaskId || content.task_id || "");
+    }
 
     const response = await fetch("/api/publications", {
       method: "POST",
@@ -118,6 +133,7 @@ function ContentCard({ content }: { content: ContentRecord }) {
             {content.profiles ? ` · ${content.profiles.full_name || content.profiles.email}` : ""}
           </p>
           <p className="mt-2 text-[12px] text-muted">
+            <span className="mr-2 rounded bg-canvas-alt px-2 py-0.5">{content.status}</span>
             发布回填 {publicationCount} 条
             {latestPublication ? ` · 最近播放 ${latestPublication.views.toLocaleString()}` : ""}
           </p>
@@ -168,11 +184,10 @@ function ContentCard({ content }: { content: ContentRecord }) {
             </label>
             {[
               ["views", "播放量"],
-              ["likes", "点赞量"],
-              ["favorites", "收藏量"],
               ["comments", "评论量"],
               ["privateMessages", "私信人数"],
               ["wechatAdds", "加微信人数"],
+              ["validInquiries", "有效咨询人数"],
               ["conversions", "成交人数"]
             ].map(([name, label]) => (
               <label key={name} className="block">
@@ -180,6 +195,10 @@ function ContentCard({ content }: { content: ContentRecord }) {
                 <input className="form-input mt-1" name={name} type="number" min="0" defaultValue="0" />
               </label>
             ))}
+            <label className="block">
+              <span className="form-label">成交金额</span>
+              <input className="form-input mt-1" name="revenue" type="number" min="0" step="0.01" defaultValue="0" />
+            </label>
             <label className="block sm:col-span-2 xl:col-span-4">
               <span className="form-label">备注</span>
               <textarea className="form-input mt-1 resize-y" name="notes" rows={3} />

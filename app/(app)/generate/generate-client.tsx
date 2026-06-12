@@ -5,14 +5,15 @@ import { AlertCircle, Brain, CheckCircle2, Loader2, Save, Sparkles, WandSparkles
 import { FormEvent, useMemo, useState } from "react";
 import { ContentOutput } from "@/components/content-output";
 import { RiskAlert } from "@/components/risk-alert";
-import { contentGoals, contentTypes, mvpPlatforms, toneStyles } from "@/lib/constants";
+import { contentGoals, contentTypes, platforms, toneStyles } from "@/lib/constants";
 import type { AiProviderStatus, FriendlyModelInfo } from "@/lib/content-generator";
 import type {
   GeneratePayload,
   GeneratedOutput,
   Platform,
   RiskHit,
-  SchoolRecord
+  SchoolRecord,
+  TaskRecord
 } from "@/lib/types";
 
 type GenerationState = {
@@ -25,21 +26,24 @@ const defaultModel = "deepseek-v4-pro-260425";
 
 export function GenerateClient({
   aiStatus,
-  schools
+  schools,
+  initialTask
 }: {
   aiStatus: AiProviderStatus;
   schools: SchoolRecord[];
+  initialTask: TaskRecord | null;
 }) {
   const router = useRouter();
   const models = aiStatus.models.length > 0 ? aiStatus.models : [];
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [payload, setPayload] = useState<GeneratePayload>({
-    schoolId: schools[0]?.id ?? "",
-    platform: "小红书",
-    contentType: "新生避坑",
+    schoolId: initialTask?.school_id ?? schools[0]?.id ?? "",
+    platform: initialTask?.platform ?? "小红书",
+    contentType: initialTask?.content_type ?? contentTypes[0],
     contentGoal: "私信咨询",
     tone: "真实学长学姐口吻",
     model: defaultModel,
+    taskId: initialTask?.id
   });
   const [result, setResult] = useState<GenerationState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,17 +65,17 @@ export function GenerateClient({
   const recommendedModel = useMemo(() => {
     const { platform, contentType, tone } = payload;
     // 校园生活类 → 豆包（种草测评基因）
-    const campusLife = ["宿舍攻略", "开学清单", "校园周边", "食堂测评"];
+    const campusLife = ["吃喝玩乐", "宿舍攻略", "新生开学", "被子生活用品"];
     // 深度分析类 → DeepSeek Pro（推理能力）
-    const deepAnalysis = ["新生避坑", "学长学姐建议"];
+    const deepAnalysis = ["校园避坑", "兼职"];
     // 强转化/避坑口吻 → DeepSeek Pro
     const deepTone = ["强转化口吻", "避坑攻略口吻"];
     // 小红书种草 → 豆包
-    if (platform === "小红书" && (campusLife.includes(contentType) || contentType === "军训用品")) return "doubao-seed-2-0-lite-260215";
+    if (platform === "小红书" && campusLife.includes(contentType)) return "doubao-seed-2-0-lite-260215";
     // 深度内容 → DeepSeek Pro
     if (deepAnalysis.includes(contentType) || deepTone.includes(tone)) return "deepseek-v4-pro-260425";
     // 抖音/视频号 + 清单类 → 极速版
-    if ((platform === "抖音" || platform === "视频号") && ["军训用品", "校园卡", "被子床品"].includes(contentType)) return "deepseek-v4-flash-260425";
+    if ((platform === "抖音" || platform === "视频号") && ["校园卡", "被子生活用品"].includes(contentType)) return "doubao-seed-2-0-lite-260215";
     // 校园生活默认 → 豆包
     if (campusLife.includes(contentType)) return "doubao-seed-2-0-lite-260215";
     // 其余 → DeepSeek Pro
@@ -158,7 +162,7 @@ export function GenerateClient({
       return;
     }
 
-    setMessage("内容已保存到内容库。");
+    setMessage(initialTask ? "内容已保存，任务进入“已生成”。" : "内容已保存到内容库。");
     setMessageType("info");
     router.refresh();
   }
@@ -167,6 +171,11 @@ export function GenerateClient({
     <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="panel p-5 sm:p-6">
         <h2 className="text-sm font-semibold text-ink">生成参数</h2>
+        {initialTask ? (
+          <p className="mt-2 rounded-lg bg-canvas-alt px-3 py-2 text-sm text-muted">
+            正在处理任务：{initialTask.content_type} · {initialTask.platform}
+          </p>
+        ) : null}
         <AiStatusBanner status={aiStatus} />
 
         {/* ── 模型选择器 ── */}
@@ -224,7 +233,7 @@ export function GenerateClient({
                   }))
                 }
               >
-                {mvpPlatforms.map((platform) => (
+                {platforms.map((platform) => (
                   <option key={platform} value={platform}>
                     {platform}
                   </option>
