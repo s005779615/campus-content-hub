@@ -94,10 +94,10 @@ export default async function SettingsPage() {
         <div className="p-5">
           {isActive ? (
             <div className="space-y-4">
-              <div className="rounded-xl border-2 border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-5">
+              <div className="rounded-lg border border-line bg-white p-5">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
-                    <Zap size={22} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-900 text-white">
+                    <Zap size={19} strokeWidth={1.7} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export default async function SettingsPage() {
                   {aiStatus.friendly.strengths.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full border border-line/60 bg-white px-3 py-1.5 text-[12px] font-medium text-ink-soft shadow-sm"
+                      className="rounded border border-line bg-canvas-alt px-3 py-1.5 text-[12px] font-medium text-ink-soft"
                     >
                       {s}
                     </span>
@@ -126,16 +126,16 @@ export default async function SettingsPage() {
               </div>
 
               <div className="rounded-lg border border-line/60 bg-canvas-alt/40 p-4">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-light">可选引擎版本</h4>
+                <h4 className="text-xs font-semibold text-muted">可选引擎版本</h4>
                 <p className="mt-2 text-[12px] leading-5 text-muted">
                   系统支持「校园灵感版」和「深度爆款版」两套创作引擎。管理员可在 Vercel 环境变量中通过{" "}
-                  <code className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-medium text-ink-soft shadow-sm">DOUBAO_MODEL</code>{" "}
+                  <code className="rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-ink-soft">DOUBAO_MODEL</code>{" "}
                   变量切换。切换后需重新部署生效。
                 </p>
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border-2 border-dashed border-coral-200 bg-coral-50/30 p-6 text-center">
+            <div className="rounded-lg border border-dashed border-coral-200 bg-coral-50/30 p-6 text-center">
               <p className="text-sm font-semibold text-coral-700">AI 引擎未配置</p>
               <p className="mt-1.5 text-[13px] leading-5 text-coral-600">
                 在 Vercel 环境变量中配置 DOUBAO_API_KEY 后重新部署即可激活。

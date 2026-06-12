@@ -1,8 +1,6 @@
 import {
   BarChart3,
-  CalendarDays,
   CheckCircle2,
-  Clock,
   FileText,
   MessageCircle,
   School,
