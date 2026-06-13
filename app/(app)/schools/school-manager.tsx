@@ -55,6 +55,24 @@ const fieldGroups: Array<{
   }
 ];
 
+function schoolToInput(school: SchoolRecord): SchoolInput {
+  return {
+    name: school.name,
+    campus_name: school.campus_name ?? "",
+    city: school.city,
+    dormitory_info: school.dormitory_info ?? "",
+    cafeteria_info: school.cafeteria_info ?? "",
+    nearby_food: school.nearby_food ?? "",
+    nearby_fun: school.nearby_fun ?? "",
+    registration_notes: school.registration_notes ?? "",
+    essentials: school.essentials ?? "",
+    campus_card_notes: school.campus_card_notes ?? "",
+    bedding_scenarios: school.bedding_scenarios ?? "",
+    freshman_faq: school.freshman_faq ?? "",
+    banned_phrases: school.banned_phrases ?? ""
+  };
+}
+
 export function SchoolManager({
   schools,
   role
@@ -63,12 +81,16 @@ export function SchoolManager({
   role: UserRole;
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState<SchoolRecord | null>(null);
-  const [draft, setDraft] = useState<SchoolInput>(emptySchool);
+  const initialSchool = role === "member" ? schools[0] ?? null : null;
+  const [editing, setEditing] = useState<SchoolRecord | null>(initialSchool);
+  const [draft, setDraft] = useState<SchoolInput>(
+    initialSchool ? schoolToInput(initialSchool) : emptySchool
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const canEdit = role === "admin";
+  const canCreate = role === "admin";
+  const canDelete = role === "admin";
   const selectedTitle = useMemo(() => {
     if (!editing) {
       return "新增学校";
@@ -85,21 +107,7 @@ export function SchoolManager({
 
   function startEdit(school: SchoolRecord) {
     setEditing(school);
-    setDraft({
-      name: school.name,
-      campus_name: school.campus_name ?? "",
-      city: school.city,
-      dormitory_info: school.dormitory_info ?? "",
-      cafeteria_info: school.cafeteria_info ?? "",
-      nearby_food: school.nearby_food ?? "",
-      nearby_fun: school.nearby_fun ?? "",
-      registration_notes: school.registration_notes ?? "",
-      essentials: school.essentials ?? "",
-      campus_card_notes: school.campus_card_notes ?? "",
-      bedding_scenarios: school.bedding_scenarios ?? "",
-      freshman_faq: school.freshman_faq ?? "",
-      banned_phrases: school.banned_phrases ?? ""
-    });
+    setDraft(schoolToInput(school));
     setError("");
   }
 
@@ -122,7 +130,13 @@ export function SchoolManager({
       return;
     }
 
-    startCreate();
+    const data = (await response.json()) as { school?: SchoolRecord };
+    if (role === "admin") {
+      startCreate();
+    } else if (data.school) {
+      setEditing(data.school);
+      setDraft(schoolToInput(data.school));
+    }
     router.refresh();
   }
 
@@ -151,7 +165,7 @@ export function SchoolManager({
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
           <h2 className="text-sm font-bold text-ink">学校列表</h2>
-          {canEdit ? (
+          {canCreate ? (
             <button className="button-secondary text-xs" onClick={startCreate} type="button">
               <Plus size={15} />
               新增
@@ -177,26 +191,26 @@ export function SchoolManager({
                       {school.dormitory_info || school.registration_notes || "资料待补充"}
                     </p>
                   </div>
-                  {canEdit ? (
-                    <div className="flex shrink-0 gap-0.5">
+                  <div className="flex shrink-0 gap-0.5">
+                    <button
+                      className="button-ghost h-8 w-8 p-0"
+                      onClick={() => startEdit(school)}
+                      type="button"
+                      aria-label={`编辑${school.name}资料`}
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                    {canDelete ? (
                       <button
-                        className="button-ghost h-8 w-8 p-0"
-                        onClick={() => startEdit(school)}
-                        type="button"
-                        aria-label="编辑学校"
-                      >
-                        <Edit3 size={15} />
-                      </button>
-                      <button
-                        className="button-ghost h-8 w-8 p-0 text-muted-light hover:text-coral-600 hover:bg-coral-50"
+                        className="button-ghost h-8 w-8 p-0 text-muted-light hover:bg-coral-50 hover:text-coral-600"
                         onClick={() => deleteSchool(school.id)}
                         type="button"
-                        aria-label="删除学校"
+                        aria-label={`删除${school.name}`}
                       >
                         <Trash2 size={15} />
                       </button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               </article>
             ))
@@ -209,11 +223,18 @@ export function SchoolManager({
       </section>
 
       <section className="panel p-5">
-        {canEdit ? (
+        {editing || canCreate ? (
           <form onSubmit={submit}>
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-bold text-ink">{selectedTitle}</h2>
-              {editing ? (
+              <div>
+                <h2 className="text-sm font-bold text-ink">{selectedTitle}</h2>
+                {role === "member" ? (
+                  <p className="mt-1 text-xs text-muted">
+                    你只能编辑已分配给自己的校区，保存后内容生成会自动使用最新资料。
+                  </p>
+                ) : null}
+              </div>
+              {editing && canCreate ? (
                 <button className="button-ghost text-xs" onClick={startCreate} type="button">
                   <X size={15} />
                   取消编辑
@@ -282,7 +303,7 @@ export function SchoolManager({
           <div>
             <h2 className="text-sm font-bold text-ink">资料说明</h2>
             <p className="mt-2 text-sm leading-6 text-muted">
-              队员账号只能查看已分配学校。发现宿舍、食堂、报到或禁用话术有变化时，请联系管理员更新资料库。
+              请选择左侧学校后编辑资料。
             </p>
           </div>
         )}

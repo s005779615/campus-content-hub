@@ -20,7 +20,7 @@ export default async function SchoolsPage() {
         description={
           profile.role === "admin"
             ? "维护每所学校的真实资料，队员生成内容时会自动引用这些信息。"
-            : "这里是你负责的学校资料，生成前可以先核对信息是否完整。"
+            : "填写和维护自己负责校区的真实资料，保存后内容生成会自动引用最新信息。"
         }
       />
 
