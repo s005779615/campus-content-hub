@@ -1,18 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertCircle, Brain, CheckCircle2, Loader2, Save, Sparkles, WandSparkles, Zap } from "lucide-react";
+import { AlertCircle, Brain, Check, CheckCircle2, Images, Loader2, Save, Sparkles, WandSparkles, Zap } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { ContentOutput } from "@/components/content-output";
 import { RiskAlert } from "@/components/risk-alert";
 import { contentGoals, contentTypes, platforms, toneStyles } from "@/lib/constants";
 import type { AiProviderStatus, FriendlyModelInfo } from "@/lib/content-generator";
 import type {
+  CampusAsset,
   GeneratePayload,
   GeneratedOutput,
   Platform,
   RiskHit,
   SchoolRecord,
+  SelectedAssetSummary,
   TaskRecord
 } from "@/lib/types";
 
@@ -20,16 +22,19 @@ type GenerationState = {
   payload: GeneratePayload;
   output: GeneratedOutput;
   riskHits: RiskHit[];
+  selectedAssets: SelectedAssetSummary[];
 };
 
 const defaultModel = "deepseek-v4-pro-260425";
 
 export function GenerateClient({
   aiStatus,
+  assets,
   schools,
   initialTask
 }: {
   aiStatus: AiProviderStatus;
+  assets: CampusAsset[];
   schools: SchoolRecord[];
   initialTask: TaskRecord | null;
 }) {
@@ -43,7 +48,8 @@ export function GenerateClient({
     contentGoal: "私信咨询",
     tone: "真实学长学姐口吻",
     model: defaultModel,
-    taskId: initialTask?.id
+    taskId: initialTask?.id,
+    assetIds: []
   });
   const [result, setResult] = useState<GenerationState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +60,25 @@ export function GenerateClient({
   const selectedSchool = useMemo(
     () => schools.find((school) => school.id === payload.schoolId),
     [schools, payload.schoolId]
+  );
+  const availableAssets = useMemo(
+    () => assets.filter((asset) => asset.school_id === payload.schoolId),
+    [assets, payload.schoolId]
+  );
+  const selectedAssets = useMemo(
+    () =>
+      assets
+        .filter((asset) => payload.assetIds?.includes(asset.id))
+        .map(({ id, file_name, file_type, category, tags, location, usage_scene }) => ({
+          id,
+          file_name,
+          file_type,
+          category,
+          tags,
+          location,
+          usage_scene
+        })),
+    [assets, payload.assetIds]
   );
 
   const currentModelInfo = useMemo(
@@ -117,6 +142,7 @@ export function GenerateClient({
     const data = (await response.json()) as {
       output: GeneratedOutput;
       riskHits: RiskHit[];
+      selectedAssets: SelectedAssetSummary[];
     };
 
     // 防御：确保 output 有基本结构，防止渲染崩溃
@@ -130,6 +156,7 @@ export function GenerateClient({
       payload: { ...payload, model: selectedModel },
       output: data.output,
       riskHits: Array.isArray(data.riskHits) ? data.riskHits : [],
+      selectedAssets: Array.isArray(data.selectedAssets) ? data.selectedAssets : selectedAssets
     });
   }
 
@@ -208,7 +235,11 @@ export function GenerateClient({
               className="form-input mt-1"
               value={payload.schoolId}
               onChange={(event) =>
-                setPayload((current) => ({ ...current, schoolId: event.target.value }))
+                setPayload((current) => ({
+                  ...current,
+                  schoolId: event.target.value,
+                  assetIds: []
+                }))
               }
               required
             >
@@ -307,6 +338,92 @@ export function GenerateClient({
             </div>
           ) : null}
 
+          <div className="rounded-lg border border-line bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[13px] font-semibold text-ink">选择素材</p>
+                <p className="mt-1 text-xs text-muted">
+                  仅显示当前学校已审核通过、可用于生成的素材。
+                </p>
+              </div>
+              <span className="shrink-0 text-xs font-medium text-muted">
+                已选 {payload.assetIds?.length ?? 0}
+              </span>
+            </div>
+            {availableAssets.length ? (
+              <div className="mt-3 grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
+                {availableAssets.map((asset) => {
+                  const selected = payload.assetIds?.includes(asset.id) ?? false;
+                  return (
+                    <button
+                      key={asset.id}
+                      className={[
+                        "group relative overflow-hidden rounded-md border text-left transition-colors",
+                        selected
+                          ? "border-brand-700 ring-1 ring-brand-700"
+                          : "border-line hover:border-brand-400"
+                      ].join(" ")}
+                      onClick={() =>
+                        setPayload((current) => {
+                          const currentIds = current.assetIds ?? [];
+                          return {
+                            ...current,
+                            assetIds: selected
+                              ? currentIds.filter((id) => id !== asset.id)
+                              : currentIds.length >= 8
+                                ? currentIds
+                                : [...currentIds, asset.id]
+                          };
+                        })
+                      }
+                      type="button"
+                    >
+                      <div className="aspect-square bg-canvas-alt">
+                        {asset.signed_url ? (
+                          asset.file_type === "视频" ? (
+                            <video
+                              className="h-full w-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                              src={asset.signed_url}
+                            />
+                          ) : (
+                            <img
+                              alt={asset.file_name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              src={asset.signed_url}
+                            />
+                          )
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted-light">
+                            <Images size={20} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="truncate px-2 py-2 text-[11px] font-medium text-ink">
+                        {asset.file_name}
+                      </div>
+                      {selected ? (
+                        <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-brand-900 text-white">
+                          <Check size={13} />
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-md bg-canvas-alt px-3 py-4 text-center text-xs text-muted">
+                当前学校暂无已通过素材，可先到校园素材库上传。
+              </div>
+            )}
+            {availableAssets.length > 8 ? (
+              <p className="mt-2 text-[11px] text-muted-light">一次最多选择 8 个素材。</p>
+            ) : null}
+          </div>
+
           {message ? (
             <div
               className={[
@@ -338,6 +455,7 @@ export function GenerateClient({
           <>
             <RiskAlert hits={result.riskHits} />
             <ContentOutput platform={result.payload.platform} output={result.output} />
+            <SelectedAssetsPanel assets={result.selectedAssets} />
             <button className="button-primary" disabled={saving} onClick={saveContent} type="button">
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
               保存到内容库
@@ -357,6 +475,28 @@ export function GenerateClient({
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function SelectedAssetsPanel({ assets }: { assets: SelectedAssetSummary[] }) {
+  if (!assets.length) {
+    return null;
+  }
+
+  return (
+    <div className="panel p-5">
+      <div className="flex items-center gap-2">
+        <Images size={16} className="text-muted" />
+        <h3 className="text-sm font-semibold text-ink">本次所选素材</h3>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {assets.map((asset) => (
+          <span key={asset.id} className="badge bg-canvas-alt text-muted">
+            {asset.file_name} · {asset.category}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

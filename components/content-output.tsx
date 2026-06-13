@@ -117,7 +117,7 @@ function DouyinView({ output }: { output: DouyinOutput }) {
           {output.storyboard?.map((item, i) => <li key={i}>{safeItem(item)}</li>)}
         </ul>
       </Section>
-      <Section title="拍摄画面建议">
+      <Section title="拍摄与视频剪辑建议">
         <ul className="list-disc space-y-1 pl-5">
           {output.shootingIdeas?.map((item, i) => <li key={i}>{safeItem(item)}</li>)}
         </ul>
@@ -198,7 +198,7 @@ function outputToText(platform: Platform, output: GeneratedOutput) {
       "分镜：",
       ...(data.storyboard ?? []),
       "",
-      "拍摄建议：",
+      "拍摄与视频剪辑建议：",
       ...(data.shootingIdeas ?? []),
       "",
       "字幕：",

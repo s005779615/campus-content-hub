@@ -10,6 +10,22 @@ export type TaskStatus =
   | "异常";
 export type AccountPositioning = "学长号" | "校园墙" | "校园生活号" | "新生攻略号";
 export type AccountStatus = "启用" | "暂停" | "异常";
+export type AssetFileType = "图片" | "视频";
+export type AssetStatus = "待审核" | "已通过" | "已驳回" | "已归档";
+export type AssetCategory =
+  | "校门"
+  | "宿舍"
+  | "食堂"
+  | "教学楼"
+  | "操场"
+  | "校园风景"
+  | "周边商圈"
+  | "商家素材"
+  | "视频素材"
+  | "账号截图"
+  | "咨询截图"
+  | "成交截图"
+  | "其他";
 
 export type Profile = {
   id: string;
@@ -61,6 +77,12 @@ export type ContentRecord = {
   schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
   publication_records?: PublicationRecord[];
+  content_asset_links?: Array<{
+    campus_assets: Pick<
+      CampusAsset,
+      "id" | "file_name" | "file_type" | "category" | "location" | "tags"
+    > | null;
+  }>;
 };
 
 export type PublicationRecord = {
@@ -133,6 +155,40 @@ export type PlatformAccount = {
   profiles?: Pick<Profile, "full_name" | "email" | "role"> | null;
 };
 
+export type CampusAsset = {
+  id: string;
+  school_id: string;
+  uploader_id: string;
+  file_url: string;
+  storage_path: string;
+  file_type: AssetFileType;
+  mime_type: string;
+  file_name: string;
+  file_size: number;
+  duration_seconds: number | null;
+  category: AssetCategory;
+  tags: string[];
+  location: string | null;
+  usage_scene: string[];
+  status: AssetStatus;
+  remark: string | null;
+  can_generate: boolean;
+  requires_review: boolean;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  signed_url?: string | null;
+  schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
+  profiles?: Pick<Profile, "full_name" | "email"> | null;
+};
+
+export type SelectedAssetSummary = Pick<
+  CampusAsset,
+  "id" | "file_name" | "file_type" | "category" | "tags" | "location" | "usage_scene"
+>;
+
 export type RiskHit = {
   term: string;
   suggestion: string;
@@ -180,4 +236,5 @@ export type GeneratePayload = {
   tone: string;
   model?: string;
   taskId?: string;
+  assetIds?: string[];
 };

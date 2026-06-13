@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
-import type { GeneratedOutput, Platform, RiskHit, TaskRecord } from "@/lib/types";
+import type {
+  CampusAsset,
+  GeneratedOutput,
+  Platform,
+  RiskHit,
+  TaskRecord
+} from "@/lib/types";
 
 export async function GET() {
   try {
@@ -47,6 +53,7 @@ export async function POST(request: Request) {
       output: GeneratedOutput;
       riskHits: RiskHit[];
       taskId?: string;
+      assetIds?: string[];
     };
 
     let task: TaskRecord | null = null;
@@ -63,11 +70,31 @@ export async function POST(request: Request) {
       task = data;
     }
 
+    const targetSchoolId = task?.school_id ?? body.schoolId;
+    const assetIds = Array.from(new Set(body.assetIds ?? [])).slice(0, 8);
+    if (assetIds.length) {
+      const { data: assets, error: assetError } = await context.supabase
+        .from("campus_assets")
+        .select("*")
+        .in("id", assetIds)
+        .eq("school_id", targetSchoolId)
+        .eq("status", "已通过")
+        .eq("can_generate", true)
+        .returns<CampusAsset[]>();
+
+      if (assetError || (assets ?? []).length !== assetIds.length) {
+        return NextResponse.json(
+          { error: "部分素材不可用、未通过审核或不属于当前学校。" },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data, error } = await context.supabase
       .from("content_records")
       .insert({
         user_id: task?.user_id ?? context.user.id,
-        school_id: task?.school_id ?? body.schoolId,
+        school_id: targetSchoolId,
         platform: task?.platform ?? body.platform,
         content_type: task?.content_type ?? body.contentType,
         content_goal: body.contentGoal,
@@ -82,6 +109,21 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (assetIds.length) {
+      const { error: linkError } = await context.supabase
+        .from("content_asset_links")
+        .insert(
+          assetIds.map((assetId) => ({
+            content_id: data.id,
+            asset_id: assetId
+          }))
+        );
+
+      if (linkError) {
+        return NextResponse.json({ error: linkError.message }, { status: 400 });
+      }
     }
 
     if (task) {

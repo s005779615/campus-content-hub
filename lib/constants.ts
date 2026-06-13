@@ -4,6 +4,7 @@ import {
   CalendarDays,
   FileText,
   GraduationCap,
+  Images,
   LayoutDashboard,
   School,
   Settings,
@@ -47,6 +48,24 @@ export const accountPositionings = [
   "新生攻略号"
 ] as const;
 
+export const assetCategories = [
+  "校门",
+  "宿舍",
+  "食堂",
+  "教学楼",
+  "操场",
+  "校园风景",
+  "周边商圈",
+  "商家素材",
+  "视频素材",
+  "账号截图",
+  "咨询截图",
+  "成交截图",
+  "其他"
+] as const;
+
+export const assetStatuses = ["待审核", "已通过", "已驳回", "已归档"] as const;
+
 export const contentGoals = ["涨粉", "私信咨询", "加微信", "成交转化"] as const;
 
 export const toneStyles = [
@@ -73,6 +92,7 @@ type NavHref =
   | "/schools"
   | "/team"
   | "/generate"
+  | "/assets"
   | "/accounts"
   | "/library"
   | "/tasks"
@@ -89,6 +109,7 @@ type NavItem = {
 export const navItems = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
   { href: "/generate", label: "内容生成", icon: WandSparkles },
+  { href: "/assets", label: "校园素材", icon: Images },
   { href: "/accounts", label: "校园分配", icon: Smartphone },
   { href: "/library", label: "内容库", icon: FileText },
   { href: "/tasks", label: "发布任务", icon: CalendarDays },

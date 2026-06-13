@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronDown, Loader2, Send } from "lucide-react";
+import { ChevronDown, Images, Loader2, Send } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { ContentOutput } from "@/components/content-output";
 import { PlatformBadge } from "@/components/platform-badge";
@@ -166,6 +166,23 @@ function ContentCard({
 
       {open ? (
         <div className="border-t border-line/50 bg-canvas-alt/30 p-5">
+          {content.content_asset_links?.length ? (
+            <div className="mb-4 rounded-lg border border-line bg-white p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <Images size={15} className="text-muted" />
+                所选素材
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {content.content_asset_links.map((link) =>
+                  link.campus_assets ? (
+                    <span key={link.campus_assets.id} className="badge bg-canvas-alt text-muted">
+                      {link.campus_assets.file_name} · {link.campus_assets.category}
+                    </span>
+                  ) : null
+                )}
+              </div>
+            </div>
+          ) : null}
           <ContentOutput platform={content.platform} output={content.output} />
         </div>
       ) : null}

@@ -1,9 +1,10 @@
 import { WandSparkles } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { attachAssetSignedUrls } from "@/lib/assets";
 import { requireAuth } from "@/lib/auth";
 import { getAiProviderStatus } from "@/lib/content-generator";
-import type { SchoolRecord, TaskRecord } from "@/lib/types";
+import type { CampusAsset, SchoolRecord, TaskRecord } from "@/lib/types";
 import { GenerateClient } from "./generate-client";
 
 export default async function GeneratePage({
@@ -14,7 +15,7 @@ export default async function GeneratePage({
   const { supabase } = await requireAuth();
   const { taskId } = await searchParams;
   const aiStatus = getAiProviderStatus();
-  const [{ data: schools }, { data: task }] = await Promise.all([
+  const [{ data: schools }, { data: task }, { data: assets }] = await Promise.all([
     supabase
       .from("schools")
       .select("*")
@@ -26,8 +27,17 @@ export default async function GeneratePage({
           .select("*")
           .eq("id", taskId)
           .single<TaskRecord>()
-      : Promise.resolve({ data: null as TaskRecord | null })
+      : Promise.resolve({ data: null as TaskRecord | null }),
+    supabase
+      .from("campus_assets")
+      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .eq("status", "已通过")
+      .eq("can_generate", true)
+      .order("created_at", { ascending: false })
+      .limit(300)
+      .returns<CampusAsset[]>()
   ]);
+  const signedAssets = await attachAssetSignedUrls(assets ?? []);
 
   return (
     <>
@@ -37,7 +47,12 @@ export default async function GeneratePage({
       />
 
       {(schools ?? []).length ? (
-        <GenerateClient aiStatus={aiStatus} schools={schools ?? []} initialTask={task ?? null} />
+        <GenerateClient
+          aiStatus={aiStatus}
+          assets={signedAssets}
+          schools={schools ?? []}
+          initialTask={task ?? null}
+        />
       ) : (
         <EmptyState
           icon={WandSparkles}

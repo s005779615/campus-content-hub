@@ -4,12 +4,14 @@ import type {
   GeneratePayload,
   GeneratedOutput,
   SchoolRecord,
+  SelectedAssetSummary,
   VideoChannelOutput,
   XiaohongshuOutput
 } from "@/lib/types";
 
 type GenerationContext = GeneratePayload & {
   school: SchoolRecord;
+  assets: SelectedAssetSummary[];
 };
 
 type AiProvider = "template" | "doubao" | "openai";
@@ -371,7 +373,7 @@ function parseGeneratedJson(content: string, providerLabel: string) {
 }
 
 function buildPrompt(context: GenerationContext) {
-  const { school, platform, contentType, contentGoal, tone } = context;
+  const { school, platform, contentType, contentGoal, tone, assets } = context;
 
   // ---- 结构差异化角度：每次随机选一个，保证不同次生成的内容结构不同 ----
   const structureAngles = [
@@ -476,6 +478,17 @@ function buildPrompt(context: GenerationContext) {
     formatFacts("开学准备", prepFacts),
     formatFacts("补充信息", extraFacts),
   ].filter(Boolean).join("\n\n");
+  const selectedAssetsBlock = assets.length
+    ? assets
+        .map(
+          (asset, index) =>
+            `${index + 1}. ${asset.file_name}｜${asset.file_type}｜${asset.category}` +
+            `${asset.location ? `｜地点：${asset.location}` : ""}` +
+            `${asset.tags.length ? `｜标签：${asset.tags.join("、")}` : ""}` +
+            `${asset.usage_scene.length ? `｜适合：${asset.usage_scene.join("、")}` : ""}`
+        )
+        .join("\n")
+    : "本次未选择资源库素材。";
 
   // ---- 平台专属格式 ----
   const format =
@@ -507,6 +520,9 @@ function buildPrompt(context: GenerationContext) {
 学校资料：
 ${schoolFactsBlock}
 
+已选素材：
+${selectedAssetsBlock}
+
 ${format}
 
 内容质量要求：
@@ -514,7 +530,8 @@ ${format}
 2. 紧扣资料：尽可能引用上面学校资料中的具体信息（宿舍条件、食堂窗口、周边店铺、报到细节）。资料没有覆盖的地方写「建议到校后确认」「可以提前问学长学姐」，绝不编造事实。
 3. 标题多样性：${platform === "小红书" ? "5 个标题角度要互不相同，覆盖情绪共鸣、信息增量、好奇心缺口、避坑提醒、清单导览中的至少 3 个方向。" : "标题要具体，包含学校名和内容类型的组合，不做标题党。"}
 4. 合规底线：涉及校园卡、床品、开学用品时，只能使用「按个人需要了解」「对比资费/尺寸/配送/售后」「以实际规则为准」「建议提前问清楚」等中性表达，严禁出现「官方指定」「必须办理」「不办影响入学」「内部渠道」「保证通过」。
-5. 输出格式：纯 JSON 对象，不要 Markdown 代码块、不要解释文字。字段名严格按上面给出的名称。每个字段都必须有内容，数组字段不能为空数组。`;
+5. 素材调用：如果已选择素材，配图说明、分镜和视频剪辑建议必须优先明确引用素材名称，不得假装看到了素材画面中未提供的信息；未选择素材时再给通用建议。
+6. 输出格式：纯 JSON 对象，不要 Markdown 代码块、不要解释文字。字段名严格按上面给出的名称。每个字段都必须有内容，数组字段不能为空数组。`;
 }
 
 function generateFallbackContent(context: GenerationContext): GeneratedOutput {
@@ -534,7 +551,7 @@ function schoolLabel(school: SchoolRecord) {
 }
 
 function generateXiaohongshu(context: GenerationContext): XiaohongshuOutput {
-  const { school, contentType, contentGoal, tone } = context;
+  const { school, contentType, contentGoal, tone, assets } = context;
   const label = schoolLabel(school);
   const campusDetail = school.campus_name ? `${school.campus_name}校区` : school.city;
 
@@ -548,7 +565,18 @@ function generateXiaohongshu(context: GenerationContext): XiaohongshuOutput {
     ],
     coverText: `${school.name}新生${contentType}\n学长学姐经验版`,
     body: `给准备来${label}的新生整理一版${contentType}。这篇是非官方校园生活分享，主要是学长学姐视角，帮大家少踩坑、少花冤枉时间。\n\n宿舍情况：${school.dormitory_info || "建议到校前先问清楚自己所在楼栋和床位尺寸。"}\n\n食堂和周边：${school.cafeteria_info || "开学前几天人会比较多，可以错峰吃饭。"}${school.nearby_food ? `附近可以关注：${school.nearby_food}。` : ""}\n\n报到提醒：${school.registration_notes || "证件、录取材料、常用药和充电设备建议单独放好。"}\n\n开学用品：${school.essentials || "先带高频必需品，大件物品可以到校后根据宿舍实际情况再补。"}\n\n${school.campus_card_notes ? `校园卡相关：${school.campus_card_notes}。建议按个人需要了解套餐、信号和资费，别被催着立刻决定。\n\n` : ""}${school.bedding_scenarios ? `被子床品：${school.bedding_scenarios}。床品要重点确认尺寸、厚度和到校搬运是否方便。\n\n` : ""}如果你也是今年新生，可以把自己的学院/校区发在评论区，我后面按校区继续整理。`,
-    imageIdeas: [
+    imageIdeas: assets.length
+      ? [
+          ...assets.slice(0, 6).map(
+            (asset, index) =>
+              `第 ${index + 1} 张使用“${asset.file_name}”（${asset.category}），配合正文对应段落；裁切时保留学校识别信息并避开个人隐私。`
+          ),
+          ...[
+            "补一张信息清单图，统一字号和留白",
+            "补一张评论区常见问题截图风格图，隐去头像和账号"
+          ].slice(0, Math.max(0, 6 - assets.length))
+        ]
+      : [
       `${school.name}校门或路牌，画面干净，突出学校识别`,
       `宿舍楼外观或寝室收纳角度，避免拍到隐私信息`,
       `食堂窗口和热门菜品拼图`,
@@ -577,21 +605,35 @@ function generateXiaohongshu(context: GenerationContext): XiaohongshuOutput {
 }
 
 function generateDouyin(context: GenerationContext): DouyinOutput {
-  const { school, contentType, tone } = context;
+  const { school, contentType, tone, assets } = context;
   const label = schoolLabel(school);
 
   return {
     hook3s: `今年来${school.name}的新生，${contentType}先别乱准备。`,
     script15s: `今年来${label}的新生看这里。第一，报到材料和常用物品先分袋装好。第二，宿舍用品不要盲目买大件，先确认床位尺寸和楼栋情况。第三，校园卡、床品这类信息按个人需要了解，重点看资费、尺寸和售后。想要清单，评论区留校区。`,
     script30s: `今年来${label}的新生，开学前可以先做三件事。\n第一，看清楚报到时间和材料，证件类单独放，别和生活用品混在一起。\n第二，宿舍用品先买高频必需品，床品、收纳、大件电器最好结合实际宿舍情况决定。\n第三，校园卡和开学用品不要被催着立刻选，先对比资费、信号、尺寸、配送和售后。\n这条是非官方校园生活经验整理，想看你们校区版本，评论区发校区。`,
-    storyboard: [
+    storyboard: assets.length
+      ? assets.slice(0, 5).map(
+          (asset, index) =>
+            `${index * 5}-${(index + 1) * 5}秒：使用“${asset.file_name}”（${asset.category}）作为画面，字幕对应脚本中的学校信息。`
+        )
+      : [
       "0-3秒：镜头对准校门或录取通知书，字幕抛出新生问题",
       "3-8秒：展示证件袋、充电器、常用药等必备物品",
       "8-15秒：切到宿舍收纳或床位尺寸示意",
       "15-24秒：展示校园卡/床品/开学用品对比表",
       "24-30秒：人物出镜总结，引导评论校区"
     ],
-    shootingIdeas: [
+    shootingIdeas: assets.length
+      ? [
+          ...assets.slice(0, 4).map(
+            (asset) =>
+              `“${asset.file_name}”建议作为${asset.file_type === "视频" ? "主镜头素材" : "定帧或轻推拉画面"}，与${asset.category}相关口播同步出现。`
+          ),
+          "不同素材之间使用 0.2-0.4 秒硬切或轻微叠化，避免过度模板化转场",
+          "截图类素材停留 1-2 秒，并对头像、账号和聊天隐私打码"
+        ].slice(0, 6)
+      : [
       "优先竖屏手持，画面真实，不要过度包装",
       "用校园门口、食堂、宿舍楼外景做转场",
       "表格镜头停留 1-2 秒，方便观众截图",

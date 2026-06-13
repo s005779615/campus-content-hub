@@ -65,7 +65,7 @@ export function AppShell({
   const navigation = (
     <nav className="space-y-1" aria-label="主导航">
       {visibleItems.map((item) => {
-        const active = pathname === item.href;
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
 
         return (

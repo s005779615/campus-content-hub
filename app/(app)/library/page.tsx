@@ -14,7 +14,9 @@ export default async function LibraryPage({
   const { taskId } = await searchParams;
   let query = supabase
     .from("content_records")
-    .select("*,schools(name,campus_name,city),profiles(full_name,email),publication_records(*)")
+    .select(
+      "*,schools(name,campus_name,city),profiles(full_name,email),publication_records(*),content_asset_links(campus_assets(id,file_name,file_type,category,location,tags))"
+    )
     .order("created_at", { ascending: false });
 
   if (taskId) {
