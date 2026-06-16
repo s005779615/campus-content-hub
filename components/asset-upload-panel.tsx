@@ -140,6 +140,8 @@ export function AssetUploadPanel({
         const item = files[index];
         const mimeType = normalizedMimeType(item.file);
         setProgress(`正在上传 ${index + 1}/${files.length}：${item.file.name}`);
+
+        // Step 1: Get signed URL
         const urlResponse = await fetch("/api/assets/upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -157,19 +159,21 @@ export function AssetUploadPanel({
         };
 
         if (!urlResponse.ok || !urlData.path || !urlData.token) {
-          throw new Error(urlData.error ?? "无法创建上传地址。");
+          throw new Error(`获取上传地址失败(${urlResponse.status})：${urlData.error || "未知错误"}`);
         }
 
-        const { error: uploadError } = await supabase.storage
+        // Step 2: Upload to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from("campus-assets")
           .uploadToSignedUrl(urlData.path, urlData.token, item.file, {
             contentType: mimeType
           });
 
         if (uploadError) {
-          throw uploadError;
+          throw new Error(`存储上传失败：${uploadError.message}`);
         }
 
+        // Step 3: Save metadata
         const baseName = item.file.name.replace(/\.[^.]+$/, "");
         const displayName =
           assetName.trim() && files.length > 1
@@ -194,10 +198,10 @@ export function AssetUploadPanel({
             requiresReview
           })
         });
-        const metadata = (await metadataResponse.json()) as { error?: string };
+        const metadata = (await metadataResponse.json()) as { error?: string; asset?: unknown };
 
         if (!metadataResponse.ok) {
-          throw new Error(metadata.error ?? "素材信息保存失败。");
+          throw new Error(`第三步元数据保存失败(${metadataResponse.status})：${metadata.error || "未知错误"}`);
         }
       }
 
