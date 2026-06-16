@@ -67,6 +67,9 @@ export async function POST(request: Request) {
       if (error || !data) {
         return NextResponse.json({ error: "任务不存在或无权访问。" }, { status: 404 });
       }
+      if (context.profile.role !== "admin" && data.user_id !== context.user.id) {
+        return NextResponse.json({ error: "只能为自己的任务保存内容。" }, { status: 403 });
+      }
       task = data;
     }
 

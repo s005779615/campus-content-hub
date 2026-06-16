@@ -36,6 +36,10 @@ export async function POST(
     return NextResponse.json({ error: "任务不存在或无权访问。" }, { status: 404 });
   }
 
+  if (context.profile.role !== "admin" && task.user_id !== context.user.id) {
+    return NextResponse.json({ error: "只能给自己的任务上传发布截图。" }, { status: 403 });
+  }
+
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${context.user.id}/${id}-${Date.now()}.${extension}`;
   const { error: uploadError } = await context.supabase.storage

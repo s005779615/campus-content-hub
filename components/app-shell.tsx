@@ -6,6 +6,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 import { appName, navItems } from "@/lib/constants";
+import { roleLabel } from "@/lib/roles";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -53,7 +54,7 @@ export function AppShell({
   const [open, setOpen] = useState(false);
 
   const visibleItems = navItems.filter(
-    (item) => !item.adminOnly || profile.role === "admin"
+    (item) => !item.roles || item.roles.includes(profile.role)
   );
 
   async function signOut() {
@@ -131,7 +132,7 @@ export function AppShell({
                   {profile.full_name || profile.email}
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-light">
-                  {profile.role === "admin" ? "管理员" : "校区负责人"}
+                  {roleLabel(profile.role)}
                 </p>
               </div>
               <button
@@ -182,7 +183,7 @@ export function AppShell({
                       {profile.full_name || profile.email}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-light">
-                      {profile.role === "admin" ? "管理员" : "校区负责人"}
+                      {roleLabel(profile.role)}
                     </p>
                   </div>
                   <button

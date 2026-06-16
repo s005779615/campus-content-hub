@@ -43,6 +43,13 @@ export async function PATCH(
     }
 
     if (context.profile.role !== "admin") {
+      if (context.profile.role !== "member") {
+        return NextResponse.json(
+          { error: "校区代理不能编辑学校基础资料。" },
+          { status: 403 }
+        );
+      }
+
       const { data: assignment } = await context.supabase
         .from("school_assignments")
         .select("school_id")

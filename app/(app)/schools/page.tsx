@@ -19,8 +19,10 @@ export default async function SchoolsPage() {
         title="学校管理"
         description={
           profile.role === "admin"
-            ? "维护每所学校的真实资料，队员生成内容时会自动引用这些信息。"
-            : "填写和维护自己负责校区的真实资料，保存后内容生成会自动引用最新信息。"
+            ? "维护每所学校的真实资料，成员生成内容时会自动引用这些信息。"
+            : profile.role === "member"
+              ? "填写和维护自己负责校区的真实资料，保存后内容生成会自动引用最新信息。"
+              : "查看自己负责校区的资料，上传素材和发布作品时会用到这些信息。"
         }
       />
 
@@ -30,7 +32,7 @@ export default async function SchoolsPage() {
         <EmptyState
           icon={Building2}
           title="暂未分配学校"
-          description="请联系管理员把你负责的学校分配到账号下。"
+          description="请联系校区负责人或管理员把你负责的学校分配到账号下。"
         />
       )}
     </>

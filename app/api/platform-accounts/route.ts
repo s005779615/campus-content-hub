@@ -63,12 +63,12 @@ export async function POST(request: Request) {
 
   const { data: targetProfile } = await context.supabase
     .from("profiles")
-    .select("id")
+    .select("id,role")
     .eq("id", body.userId)
     .single();
 
-  if (!targetProfile) {
-    return NextResponse.json({ error: "无权为该队员分配账号。" }, { status: 403 });
+  if (!targetProfile || !["member", "agent"].includes(targetProfile.role)) {
+    return NextResponse.json({ error: "无权为该成员分配账号。" }, { status: 403 });
   }
 
   const { error: assignmentError } = await context.supabase

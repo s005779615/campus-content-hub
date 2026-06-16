@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      path: storagePath,
+      path: data.path ?? storagePath,
       token: data.token
     });
   } catch (error) {

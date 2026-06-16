@@ -13,6 +13,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { contentTypes, taskStatuses } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
+import { roleLabel } from "@/lib/roles";
 import type {
   PlatformAccount,
   Profile,
@@ -43,6 +44,7 @@ export function TasksClient({
   members,
   accounts,
   role,
+  currentUserId,
   initialStatus
 }: {
   tasks: TaskRecord[];
@@ -50,6 +52,7 @@ export function TasksClient({
   members: Profile[];
   accounts: PlatformAccount[];
   role: UserRole;
+  currentUserId: string;
   initialStatus?: string;
 }) {
   const router = useRouter();
@@ -166,7 +169,7 @@ export function TasksClient({
       {role === "admin" ? (
         <section className="panel p-5 sm:p-6">
           <h2 className="text-base font-semibold text-ink">分配每日任务</h2>
-          <p className="mt-1 text-sm text-muted">选择运营账号后，负责人、学校和平台会自动关联。</p>
+          <p className="mt-1 text-sm text-muted">选择运营账号后，成员、学校和平台会自动关联。</p>
           <form className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={createTask}>
             <label className="md:col-span-2">
               <span className="form-label">校区账号</span>
@@ -227,13 +230,13 @@ export function TasksClient({
           </label>
           {role === "admin" ? (
             <label>
-              <span className="form-label">校区负责人</span>
+              <span className="form-label">成员</span>
               <select
                 className="form-input"
                 value={filters.memberId}
                 onChange={(event) => setFilters((current) => ({ ...current, memberId: event.target.value }))}
               >
-                <option value="全部">全部负责人</option>
+                <option value="全部">全部成员</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{personName(member)}</option>)}
               </select>
             </label>
@@ -255,7 +258,10 @@ export function TasksClient({
       {message ? <p className="panel px-4 py-3 text-sm text-muted">{message}</p> : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
-        {filtered.map((task) => (
+        {filtered.map((task) => {
+          const canWorkTask = role === "admin" || task.user_id === currentUserId;
+
+          return (
           <article key={task.id} className="panel p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -274,7 +280,7 @@ export function TasksClient({
             </div>
 
             {role === "admin" ? (
-              <p className="mt-4 text-sm text-ink-soft">负责人：{personName(task.profiles)}</p>
+              <p className="mt-4 text-sm text-ink-soft">成员：{personName(task.profiles)}</p>
             ) : null}
             {task.note ? <p className="mt-3 rounded-lg bg-canvas-alt px-3 py-2 text-sm leading-6 text-muted">{task.note}</p> : null}
             {task.publish_screenshot_url ? (
@@ -289,12 +295,12 @@ export function TasksClient({
             ) : null}
 
             <div className="mt-5 flex flex-wrap gap-2">
-              {task.status === "未开始" ? (
+              {canWorkTask && task.status === "未开始" ? (
                 <Link className="button-primary flex-1 sm:flex-none" href={`/generate?taskId=${task.id}`}>
                   开始生成
                 </Link>
               ) : null}
-              {task.status === "已生成" ? (
+              {canWorkTask && task.status === "已生成" ? (
                 <button
                   className="button-primary flex-1 sm:flex-none"
                   disabled={savingId === task.id}
@@ -305,7 +311,7 @@ export function TasksClient({
                   内容已确认
                 </button>
               ) : null}
-              {task.status === "待发布" ? (
+              {canWorkTask && task.status === "待发布" ? (
                 <label className="button-primary flex-1 cursor-pointer sm:flex-none">
                   {savingId === task.id ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                   上传发布截图
@@ -321,7 +327,7 @@ export function TasksClient({
                   />
                 </label>
               ) : null}
-              {task.status === "已发布" ? (
+              {canWorkTask && task.status === "已发布" ? (
                 <Link className="button-primary flex-1 sm:flex-none" href={`/library?taskId=${task.id}`}>
                   回填发布数据
                 </Link>
@@ -332,6 +338,11 @@ export function TasksClient({
                 </Link>
               ) : null}
             </div>
+            {!canWorkTask ? (
+              <p className="mt-4 rounded-lg bg-canvas-alt px-3 py-2 text-sm text-muted">
+                当前为{roleLabel(role)}监管查看，任务执行由账号本人完成。
+              </p>
+            ) : null}
 
             {role === "admin" ? (
               <form
@@ -362,7 +373,8 @@ export function TasksClient({
               </form>
             ) : null}
           </article>
-        ))}
+          );
+        })}
       </section>
 
       {!filtered.length ? (

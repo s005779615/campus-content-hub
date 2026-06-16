@@ -10,7 +10,7 @@ export default async function LibraryPage({
 }: {
   searchParams: Promise<{ taskId?: string }>;
 }) {
-  const { supabase, profile } = await requireAuth();
+  const { supabase, profile, user } = await requireAuth();
   const { taskId } = await searchParams;
   let query = supabase
     .from("content_records")
@@ -31,13 +31,18 @@ export default async function LibraryPage({
         title="内容库"
         description={
           profile.role === "admin"
-            ? "查看全部队员保存的内容，并检查发布回填情况。"
+            ? "查看全部成员保存的内容，并检查发布回填情况。"
             : "管理自己保存的内容，复制发布后回填链接和数据。"
         }
       />
 
       {(contents ?? []).length ? (
-        <ContentLibrary contents={contents ?? []} activeTaskId={taskId} />
+        <ContentLibrary
+          contents={contents ?? []}
+          activeTaskId={taskId}
+          currentUserId={user.id}
+          role={profile.role}
+        />
       ) : (
         <EmptyState
           icon={FileText}

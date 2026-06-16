@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/auth";
+import { canManageAgents, getAuthContext } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { UserRole } from "@/lib/types";
 
 export async function GET() {
   try {
@@ -10,16 +11,17 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (context.profile.role !== "admin") {
+    if (!canManageAgents(context.profile)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const targetRole = context.profile.role === "admin" ? "member" : "agent";
     const [{ data: members, error: membersError }, { data: assignments, error: assignmentsError }] =
       await Promise.all([
         context.supabase
           .from("profiles")
           .select("id,email,full_name,role,created_at")
-          .eq("role", "member")
+          .eq("role", targetRole)
           .order("created_at", { ascending: false }),
         context.supabase
           .from("school_assignments")
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (context.profile.role !== "admin") {
+    if (!canManageAgents(context.profile)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -58,7 +60,14 @@ export async function POST(request: Request) {
       username: string;
       password: string;
       fullName?: string;
+      role?: UserRole;
     };
+
+    const targetRole: UserRole = context.profile.role === "admin" ? "member" : "agent";
+    if (body.role && body.role !== targetRole) {
+      return NextResponse.json({ error: "不能创建该角色账号。" }, { status: 403 });
+    }
+    const managerId = targetRole === "agent" ? context.user.id : null;
 
     const username = (body.username || "").trim().toLowerCase();
     if (!username || username.length < 2) {
@@ -66,6 +75,9 @@ export async function POST(request: Request) {
     }
     if (!/^[a-z0-9_]+$/.test(username)) {
       return NextResponse.json({ error: "账号名只能包含字母、数字和下划线" }, { status: 400 });
+    }
+    if (!body.password || body.password.length < 6) {
+      return NextResponse.json({ error: "初始密码至少6位。" }, { status: 400 });
     }
 
     // 内部用虚拟邮箱注册 Supabase Auth
@@ -79,7 +91,8 @@ export async function POST(request: Request) {
       user_metadata: {
         full_name: body.fullName || username,
         username: username,
-        role: "member"
+        role: targetRole,
+        managed_by: managerId
       }
     });
 
@@ -92,7 +105,7 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { error: msg || "创建队员失败" },
+        { error: msg || "创建成员失败" },
         { status: 400 }
       );
     }
@@ -103,7 +116,8 @@ export async function POST(request: Request) {
         id: created.user.id,
         email: internalEmail,
         full_name: body.fullName || username,
-        role: "member"
+        role: targetRole,
+        managed_by: managerId
       })
       .select("id,email,full_name,role,created_at")
       .single();

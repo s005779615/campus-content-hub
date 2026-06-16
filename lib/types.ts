@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "member";
+export type UserRole = "admin" | "member" | "agent";
 export type Platform = "小红书" | "抖音" | "视频号";
 export type TaskStatus =
   | "未开始"
@@ -33,6 +33,7 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   role: UserRole;
+  managed_by?: string | null;
   created_at?: string;
 };
 

@@ -35,7 +35,7 @@ export default async function AnalyticsPage() {
   const bySchool = groupBy(publicationRows, (item) => item.schools?.name ?? "未命名学校");
   const byMember = groupBy(
     publicationRows,
-    (item) => item.profiles?.full_name || item.profiles?.email || "未命名队员"
+    (item) => item.profiles?.full_name || item.profiles?.email || "未命名成员"
   );
   const byPlatform = groupBy(publicationRows, (item) => item.platform);
   const topPrivateMessages = [...publicationRows]
@@ -82,7 +82,7 @@ export default async function AnalyticsPage() {
             )
           )}
         </RankingPanel>
-        <RankingPanel title="队员发布数量">
+        <RankingPanel title="成员发布数量">
           {Object.entries(byMember).map(([name, rows]) => (
             <MetricRow key={name} label={name} value={`${rows.length} 条`} />
           ))}

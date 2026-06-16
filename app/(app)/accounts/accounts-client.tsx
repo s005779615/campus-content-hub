@@ -5,6 +5,7 @@ import { Loader2, Plus } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { accountPositionings, platforms } from "@/lib/constants";
+import { roleLabel } from "@/lib/roles";
 import type {
   AccountStatus,
   PlatformAccount,
@@ -101,16 +102,16 @@ export function AccountsClient({
         <section className="panel p-5 sm:p-6">
           <div>
             <h2 className="text-base font-semibold text-ink">新增或更新分配</h2>
-            <p className="mt-1 text-sm text-muted">同一队员、学校和平台会自动更新原分配。</p>
+            <p className="mt-1 text-sm text-muted">同一成员、学校和平台会自动更新原分配。</p>
           </div>
           <form className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={submit}>
             <label>
-              <span className="form-label">负责人</span>
+              <span className="form-label">成员</span>
               <select className="form-input" name="userId" required>
-                <option value="">选择队员</option>
+                <option value="">选择成员</option>
                 {members.map((member) => (
                   <option key={member.id} value={member.id}>
-                    {personName(member)} · 校区负责人
+                    {personName(member)} · {roleLabel(member.role)}
                   </option>
                 ))}
               </select>
@@ -197,7 +198,7 @@ export function AccountsClient({
               value={ownerFilter}
               onChange={(event) => setOwnerFilter(event.target.value)}
             >
-              <option value="全部">全部负责人</option>
+              <option value="全部">全部成员</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>{personName(member)}</option>
               ))}

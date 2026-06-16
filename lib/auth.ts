@@ -53,3 +53,7 @@ export function isAdmin(profile: Pick<Profile, "role">) {
 export function isManager(profile: Pick<Profile, "role">) {
   return profile.role === "admin";
 }
+
+export function canManageAgents(profile: Pick<Profile, "role">) {
+  return profile.role === "admin" || profile.role === "member";
+}

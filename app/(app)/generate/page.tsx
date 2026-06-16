@@ -57,7 +57,7 @@ export default async function GeneratePage({
         <EmptyState
           icon={WandSparkles}
           title="暂无可用学校"
-          description="管理员需要先创建学校并分配给队员，才能生成内容。"
+          description="管理员需要先创建学校并分配给成员，才能生成内容。"
         />
       )}
     </>

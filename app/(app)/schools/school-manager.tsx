@@ -81,6 +81,7 @@ export function SchoolManager({
   role: UserRole;
 }) {
   const router = useRouter();
+  const canUpdate = role === "admin" || role === "member";
   const initialSchool = role === "member" ? schools[0] ?? null : null;
   const [editing, setEditing] = useState<SchoolRecord | null>(initialSchool);
   const [draft, setDraft] = useState<SchoolInput>(
@@ -192,14 +193,16 @@ export function SchoolManager({
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-0.5">
-                    <button
-                      className="button-ghost h-8 w-8 p-0"
-                      onClick={() => startEdit(school)}
-                      type="button"
-                      aria-label={`编辑${school.name}资料`}
-                    >
-                      <Edit3 size={15} />
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        className="button-ghost h-8 w-8 p-0"
+                        onClick={() => startEdit(school)}
+                        type="button"
+                        aria-label={`编辑${school.name}资料`}
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                    ) : null}
                     {canDelete ? (
                       <button
                         className="button-ghost h-8 w-8 p-0 text-muted-light hover:bg-coral-50 hover:text-coral-600"
@@ -223,7 +226,7 @@ export function SchoolManager({
       </section>
 
       <section className="panel p-5">
-        {editing || canCreate ? (
+        {canUpdate && (editing || canCreate) ? (
           <form onSubmit={submit}>
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
@@ -303,7 +306,9 @@ export function SchoolManager({
           <div>
             <h2 className="text-sm font-bold text-ink">资料说明</h2>
             <p className="mt-2 text-sm leading-6 text-muted">
-              请选择左侧学校后编辑资料。
+              {role === "agent"
+                ? "校区代理可以查看学校资料，并继续上传素材、生成内容和发布作品；学校基础资料由校区负责人维护。"
+                : "请选择左侧学校后编辑资料。"}
             </p>
           </div>
         )}

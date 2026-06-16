@@ -32,6 +32,10 @@ export async function PATCH(
       return NextResponse.json({ error: "任务不存在或无权访问。" }, { status: 404 });
     }
 
+    if (context.profile.role !== "admin" && currentTask.user_id !== context.user.id) {
+      return NextResponse.json({ error: "只能操作分配给自己的任务。" }, { status: 403 });
+    }
+
     if (body.status && !(taskStatuses as readonly string[]).includes(body.status)) {
       return NextResponse.json({ error: "无效的任务状态。" }, { status: 400 });
     }

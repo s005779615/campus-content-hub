@@ -4,6 +4,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { requireAuth } from "@/lib/auth";
 import { riskTermSuggestions } from "@/lib/constants";
 import { getAiProviderStatus } from "@/lib/content-generator";
+import { roleLabel } from "@/lib/roles";
 
 export default async function SettingsPage() {
   const { profile } = await requireAuth();
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
             <div className="flex items-center justify-between gap-3 rounded-lg bg-canvas-alt/60 px-4 py-3">
               <dt className="text-[13px] text-muted-light">角色</dt>
               <dd className="text-[13px] font-semibold text-ink">
-                {profile.role === "admin" ? "管理员" : "队员"}
+                {roleLabel(profile.role)}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg bg-canvas-alt/60 px-4 py-3">

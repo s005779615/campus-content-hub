@@ -5,7 +5,8 @@ create table if not exists public.profiles (
   email text not null unique,
   full_name text,
   avatar_url text,
-  role text not null default 'member' check (role in ('admin', 'member')),
+  role text not null default 'member' check (role in ('admin', 'member', 'agent')),
+  managed_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -22,6 +23,51 @@ as $$
     where id = uid
       and role = 'admin'
   );
+$$;
+
+create or replace function public.can_manage_agent(target_uid uuid, viewer_uid uuid default auth.uid())
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles target
+    join public.profiles viewer on viewer.id = viewer_uid
+    where target.id = target_uid
+      and target.role = 'agent'
+      and viewer.role = 'member'
+      and (
+        target.managed_by = viewer_uid
+        or exists (
+          select 1
+          from public.school_assignments agent_assignment
+          where agent_assignment.user_id = target_uid
+            and agent_assignment.assigned_by = viewer_uid
+        )
+        or exists (
+          select 1
+          from public.school_assignments agent_assignment
+          join public.school_assignments viewer_assignment
+            on viewer_assignment.school_id = agent_assignment.school_id
+           and viewer_assignment.user_id = viewer_uid
+          where agent_assignment.user_id = target_uid
+        )
+      )
+  );
+$$;
+
+create or replace function public.can_view_user(target_uid uuid, viewer_uid uuid default auth.uid())
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    target_uid = viewer_uid
+    or public.is_admin(viewer_uid)
+    or public.can_manage_agent(target_uid, viewer_uid);
 $$;
 
 create table if not exists public.platform_accounts (
@@ -130,17 +176,19 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, role)
+  insert into public.profiles (id, email, full_name, role, managed_by)
   values (
     new.id,
     new.email,
     nullif(new.raw_user_meta_data ->> 'full_name', ''),
-    coalesce(nullif(new.raw_user_meta_data ->> 'role', ''), 'member')
+    coalesce(nullif(new.raw_user_meta_data ->> 'role', ''), 'member'),
+    nullif(new.raw_user_meta_data ->> 'managed_by', '')::uuid
   )
   on conflict (id) do update
   set
     email = excluded.email,
     full_name = coalesce(excluded.full_name, public.profiles.full_name),
+    managed_by = coalesce(excluded.managed_by, public.profiles.managed_by),
     updated_at = now();
 
   return new;
@@ -160,11 +208,12 @@ alter table public.publication_records enable row level security;
 alter table public.publish_tasks enable row level security;
 
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
-create policy "profiles_select_own_or_admin"
+drop policy if exists "profiles_select_visible" on public.profiles;
+create policy "profiles_select_visible"
 on public.profiles
 for select
 to authenticated
-using (auth.uid() = id or public.is_admin());
+using (public.can_view_user(id));
 
 drop policy if exists "profiles_update_admin" on public.profiles;
 create policy "profiles_update_admin"
@@ -175,7 +224,8 @@ using (public.is_admin())
 with check (public.is_admin());
 
 drop policy if exists "schools_select_assigned_or_admin" on public.schools;
-create policy "schools_select_assigned_or_admin"
+drop policy if exists "schools_select_visible" on public.schools;
+create policy "schools_select_visible"
 on public.schools
 for select
 to authenticated
@@ -185,7 +235,7 @@ using (
     select 1
     from public.school_assignments sa
     where sa.school_id = schools.id
-      and sa.user_id = auth.uid()
+      and public.can_view_user(sa.user_id)
   )
 );
 
@@ -204,20 +254,36 @@ for update
 to authenticated
 using (
   public.is_admin()
-  or exists (
-    select 1
-    from public.school_assignments sa
-    where sa.school_id = schools.id
-      and sa.user_id = auth.uid()
+  or (
+    exists (
+      select 1
+      from public.profiles p
+      where p.id = auth.uid()
+        and p.role = 'member'
+    )
+    and exists (
+      select 1
+      from public.school_assignments sa
+      where sa.school_id = schools.id
+        and sa.user_id = auth.uid()
+    )
   )
 )
 with check (
   public.is_admin()
-  or exists (
-    select 1
-    from public.school_assignments sa
-    where sa.school_id = schools.id
-      and sa.user_id = auth.uid()
+  or (
+    exists (
+      select 1
+      from public.profiles p
+      where p.id = auth.uid()
+        and p.role = 'member'
+    )
+    and exists (
+      select 1
+      from public.school_assignments sa
+      where sa.school_id = schools.id
+        and sa.user_id = auth.uid()
+    )
   )
 );
 
@@ -229,11 +295,12 @@ to authenticated
 using (public.is_admin());
 
 drop policy if exists "assignments_select_self_or_admin" on public.school_assignments;
-create policy "assignments_select_self_or_admin"
+drop policy if exists "assignments_select_visible" on public.school_assignments;
+create policy "assignments_select_visible"
 on public.school_assignments
 for select
 to authenticated
-using (public.is_admin() or user_id = auth.uid());
+using (public.can_view_user(user_id));
 
 drop policy if exists "assignments_insert_admin" on public.school_assignments;
 create policy "assignments_insert_admin"
@@ -250,11 +317,12 @@ to authenticated
 using (public.is_admin());
 
 drop policy if exists "content_select_self_or_admin" on public.content_records;
-create policy "content_select_self_or_admin"
+drop policy if exists "content_select_visible" on public.content_records;
+create policy "content_select_visible"
 on public.content_records
 for select
 to authenticated
-using (public.is_admin() or user_id = auth.uid());
+using (public.can_view_user(user_id));
 
 drop policy if exists "content_insert_self_assigned" on public.content_records;
 create policy "content_insert_self_assigned"
@@ -294,11 +362,12 @@ with check (
 );
 
 drop policy if exists "publication_select_self_or_admin" on public.publication_records;
-create policy "publication_select_self_or_admin"
+drop policy if exists "publication_select_visible" on public.publication_records;
+create policy "publication_select_visible"
 on public.publication_records
 for select
 to authenticated
-using (public.is_admin() or user_id = auth.uid());
+using (public.can_view_user(user_id));
 
 drop policy if exists "publication_insert_self_or_admin" on public.publication_records;
 create policy "publication_insert_self_or_admin"
@@ -342,11 +411,12 @@ with check (
 );
 
 drop policy if exists "tasks_select_self_or_admin" on public.publish_tasks;
-create policy "tasks_select_self_or_admin"
+drop policy if exists "tasks_select_visible" on public.publish_tasks;
+create policy "tasks_select_visible"
 on public.publish_tasks
 for select
 to authenticated
-using (public.is_admin() or user_id = auth.uid());
+using (public.can_view_user(user_id));
 
 drop policy if exists "tasks_insert_admin" on public.publish_tasks;
 create policy "tasks_insert_admin"
@@ -365,11 +435,13 @@ with check (public.is_admin() or user_id = auth.uid());
 
 alter table public.platform_accounts enable row level security;
 
-create policy "accounts_select_own_or_admin"
+drop policy if exists "accounts_select_own_or_admin" on public.platform_accounts;
+drop policy if exists "accounts_select_visible" on public.platform_accounts;
+create policy "accounts_select_visible"
 on public.platform_accounts
 for select
 to authenticated
-using (public.is_admin() or user_id = auth.uid());
+using (public.can_view_user(user_id));
 
 create policy "accounts_insert_own"
 on public.platform_accounts

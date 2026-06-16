@@ -17,11 +17,15 @@ export type AssignmentRow = {
 export function TeamManager({
   members,
   schools,
-  assignments
+  assignments,
+  targetLabel,
+  targetRole
 }: {
   members: Profile[];
   schools: SchoolRecord[];
   assignments: AssignmentRow[];
+  targetLabel: "校区负责人" | "校区代理";
+  targetRole: "member" | "agent";
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -61,7 +65,8 @@ export function TeamManager({
       body: JSON.stringify({
         username: String(form.get("username") ?? ""),
         password: String(form.get("password") ?? ""),
-        fullName: String(form.get("fullName") ?? "")
+        fullName: String(form.get("fullName") ?? ""),
+        role: targetRole
       })
     });
 
@@ -69,7 +74,7 @@ export function TeamManager({
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setError(data.error ?? "创建队员失败，请检查 Service Role Key。");
+      setError(data.error ?? `创建${targetLabel}失败，请检查 Service Role Key。`);
       return;
     }
 
@@ -118,7 +123,7 @@ export function TeamManager({
   async function deleteMember(member: Profile) {
     const memberName = member.full_name || member.email;
     const confirmed = window.confirm(
-      `确认删除负责人“${memberName}”吗？\n\n删除后，该账号的学校分配、任务、生成内容和回填数据都会永久删除，无法恢复。`
+      `确认删除${targetLabel}“${memberName}”吗？\n\n删除后，该账号的学校分配、任务、生成内容和回填数据都会永久删除，无法恢复。`
     );
 
     if (!confirmed) {
@@ -136,7 +141,7 @@ export function TeamManager({
     setDeletingMemberId(null);
 
     if (!response.ok) {
-      setError(data.error ?? "删除负责人失败。");
+      setError(data.error ?? `删除${targetLabel}失败。`);
       return;
     }
 
@@ -146,11 +151,13 @@ export function TeamManager({
   return (
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="panel p-5">
-        <h2 className="text-sm font-bold text-ink">创建负责人账号</h2>
-        <p className="mt-0.5 text-xs text-muted-light">校区负责人用账号名和密码登录。</p>
+        <h2 className="text-sm font-bold text-ink">创建{targetLabel}账号</h2>
+        <p className="mt-0.5 text-xs text-muted-light">
+          {targetLabel}用账号名和密码登录。
+        </p>
         <form className="mt-4 space-y-3.5" onSubmit={createMember}>
           <label className="block">
-            <span className="form-label">负责人姓名</span>
+            <span className="form-label">{targetLabel}姓名</span>
             <input className="form-input mt-1" name="fullName" placeholder="例如：小马" />
           </label>
           <label className="block">
@@ -175,7 +182,7 @@ export function TeamManager({
           ) : null}
           <button className="button-primary w-full" disabled={creating} type="submit">
             {creating ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
-            创建负责人
+            创建{targetLabel}
           </button>
         </form>
       </section>
@@ -183,7 +190,9 @@ export function TeamManager({
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
           <h2 className="text-sm font-bold text-ink">学校分配</h2>
-          <span className="text-[11px] text-muted-light">{members.length} 名负责人</span>
+          <span className="text-[11px] text-muted-light">
+            {members.length} 名{targetLabel}
+          </span>
         </div>
         <div className="divide-y divide-line/50">
           {members.length ? (
@@ -231,7 +240,7 @@ export function TeamManager({
                       ) : (
                         <Trash2 size={14} />
                       )}
-                      删除负责人
+                      删除{targetLabel}
                     </button>
                   </div>
                 </div>
@@ -266,7 +275,9 @@ export function TeamManager({
                     })
                   ) : (
                     <div className="col-span-full rounded-lg border border-line bg-canvas-alt px-4 py-3 text-[13px] text-muted-light">
-                      还没有学校，先到学校管理页创建。
+                      {targetRole === "agent"
+                        ? "你还没有可分配学校，请先联系管理员把学校分配到你的负责人账号下。"
+                        : "还没有学校，先到学校管理页创建。"}
                     </div>
                   )}
                 </div>
@@ -274,7 +285,7 @@ export function TeamManager({
             ))
           ) : (
             <div className="px-5 py-10 text-center text-[13px] text-muted-light">
-              还没有负责人账号。
+              还没有{targetLabel}账号。
             </div>
           )}
         </div>

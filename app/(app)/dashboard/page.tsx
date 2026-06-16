@@ -17,6 +17,7 @@ import { PlatformBadge } from "@/components/platform-badge";
 import { StatCard } from "@/components/stat-card";
 import { compactNumber, formatDate } from "@/lib/format";
 import { requireAuth } from "@/lib/auth";
+import { roleLabel } from "@/lib/roles";
 import type {
   PlatformAccount,
   Profile,
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
       ? supabase
           .from("profiles")
           .select("id,email,full_name,role,created_at")
-          .eq("role", "member")
+          .in("role", ["member", "agent"])
           .order("full_name")
           .returns<Profile[]>()
       : Promise.resolve({ data: [] as Profile[] }),
@@ -157,7 +158,7 @@ export default async function DashboardPage() {
         <Header
           eyebrow="管理员"
           title="团队监管仪表盘"
-          description={`${memberRows.length} 名校区负责人 · ${schoolRows.length} 所可见学校`}
+          description={`${memberRows.length} 名成员 · ${schoolRows.length} 所可见学校`}
         />
 
         <div className="grid overflow-hidden rounded-lg border border-line bg-line gap-px sm:grid-cols-2 xl:grid-cols-4">
@@ -175,7 +176,7 @@ export default async function DashboardPage() {
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <section className="panel p-5 sm:p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-ink">各负责人今日完成率</h2>
+              <h2 className="text-base font-semibold text-ink">各成员今日完成率</h2>
               <UsersRound size={18} className="text-muted" />
             </div>
             <div className="mt-5 space-y-5">
@@ -190,7 +191,7 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {!completion.length ? <p className="text-sm text-muted">还没有校区负责人。</p> : null}
+              {!completion.length ? <p className="text-sm text-muted">还没有成员账号。</p> : null}
             </div>
           </section>
 
@@ -240,7 +241,7 @@ export default async function DashboardPage() {
   return (
     <>
       <Header
-        eyebrow="校区负责人"
+        eyebrow={roleLabel(profile.role)}
         title={`${personName(profile)}的工作台`}
         description={`${schoolRows.length} 所负责学校 · 今天 ${taskRows.length} 个任务`}
       />

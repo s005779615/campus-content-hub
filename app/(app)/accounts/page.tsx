@@ -22,7 +22,7 @@ export default async function AccountsPage() {
       ? supabase
           .from("profiles")
           .select("id,email,full_name,role,created_at")
-          .eq("role", "member")
+          .in("role", ["member", "agent"])
           .order("full_name")
           .returns<Profile[]>()
       : Promise.resolve({ data: [] as Profile[] })
@@ -34,7 +34,7 @@ export default async function AccountsPage() {
         title="校园分配"
         description={
           manager
-            ? "把学校、运营账号和每日目标分配到具体队员。"
+            ? "把学校、运营账号和每日目标分配到具体成员。"
             : "查看分配给你的学校、平台账号和每日发布目标。"
         }
       />

@@ -8,14 +8,18 @@ import { PlatformBadge } from "@/components/platform-badge";
 import { RiskAlert } from "@/components/risk-alert";
 import { platforms } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
-import type { ContentRecord } from "@/lib/types";
+import type { ContentRecord, UserRole } from "@/lib/types";
 
 export function ContentLibrary({
   contents,
-  activeTaskId
+  activeTaskId,
+  currentUserId,
+  role
 }: {
   contents: ContentRecord[];
   activeTaskId?: string;
+  currentUserId: string;
+  role: UserRole;
 }) {
   const [platform, setPlatform] = useState("全部");
   const [school, setSchool] = useState("全部");
@@ -66,7 +70,12 @@ export function ContentLibrary({
 
       <div className="space-y-4">
         {filtered.map((content) => (
-          <ContentCard key={content.id} content={content} activeTaskId={activeTaskId} />
+          <ContentCard
+            key={content.id}
+            content={content}
+            activeTaskId={activeTaskId}
+            canBackfill={role === "admin" || content.user_id === currentUserId}
+          />
         ))}
       </div>
     </div>
@@ -75,10 +84,12 @@ export function ContentLibrary({
 
 function ContentCard({
   content,
-  activeTaskId
+  activeTaskId,
+  canBackfill
 }: {
   content: ContentRecord;
   activeTaskId?: string;
+  canBackfill: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [showPublish, setShowPublish] = useState(false);
@@ -147,14 +158,16 @@ function ContentCard({
             <ChevronDown size={15} className={`transition-transform ${open ? "rotate-180" : ""}`} />
             {open ? "收起内容" : "查看内容"}
           </button>
-          <button
-            className="button-primary text-xs"
-            onClick={() => setShowPublish((current) => !current)}
-            type="button"
-          >
-            <Send size={15} />
-            回填发布数据
-          </button>
+          {canBackfill ? (
+            <button
+              className="button-primary text-xs"
+              onClick={() => setShowPublish((current) => !current)}
+              type="button"
+            >
+              <Send size={15} />
+              回填发布数据
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -187,7 +200,7 @@ function ContentCard({
         </div>
       ) : null}
 
-      {showPublish ? (
+      {showPublish && canBackfill ? (
         <form className="border-t border-line/50 bg-canvas-alt/40 p-5" onSubmit={submitPublication}>
           <h3 className="mb-4 text-sm font-semibold text-ink">发布数据回填</h3>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

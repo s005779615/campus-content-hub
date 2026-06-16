@@ -10,7 +10,7 @@ export default async function TasksPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const { supabase, profile } = await requireAuth();
+  const { supabase, profile, user } = await requireAuth();
   const { status } = await searchParams;
 
   const [{ data: tasks }, { data: schools }, { data: members }, { data: accounts }] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function TasksPage({
       ? supabase
           .from("profiles")
           .select("id,email,full_name,role,created_at")
-          .eq("role", "member")
+          .in("role", ["member", "agent"])
           .order("created_at", { ascending: false })
           .returns<Profile[]>()
       : Promise.resolve({ data: [] as Profile[] }),
@@ -63,6 +63,7 @@ export default async function TasksPage({
           members={members ?? []}
           accounts={accounts ?? []}
           role={profile.role}
+          currentUserId={user.id}
           initialStatus={status}
         />
       ) : (

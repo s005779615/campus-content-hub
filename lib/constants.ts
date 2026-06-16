@@ -13,6 +13,7 @@ import {
   WandSparkles
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { UserRole } from "@/lib/types";
 
 export const appName = "校园内容中台";
 
@@ -103,10 +104,10 @@ type NavItem = {
   href: NavHref;
   label: string;
   icon: LucideIcon;
-  adminOnly?: boolean;
+  roles?: readonly UserRole[];
 };
 
-export const navItems = [
+export const navItems: readonly NavItem[] = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
   { href: "/generate", label: "内容生成", icon: WandSparkles },
   { href: "/assets", label: "校园素材", icon: Images },
@@ -114,10 +115,10 @@ export const navItems = [
   { href: "/library", label: "内容库", icon: FileText },
   { href: "/tasks", label: "发布任务", icon: CalendarDays },
   { href: "/schools", label: "学校管理", icon: School },
-  { href: "/team", label: "校区负责人", icon: UsersRound, adminOnly: true },
+  { href: "/team", label: "团队成员", icon: UsersRound, roles: ["admin", "member"] },
   { href: "/analytics", label: "数据看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
-] satisfies readonly NavItem[];
+];
 
 export const platformAccent: Record<string, string> = {
   小红书: "bg-coral-50 text-coral-600 border-coral-100",

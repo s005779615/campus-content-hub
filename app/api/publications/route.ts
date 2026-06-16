@@ -28,6 +28,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
+    if (context.profile.role !== "admin" && content.user_id !== context.user.id) {
+      return NextResponse.json({ error: "只能回填自己的发布数据。" }, { status: 403 });
+    }
+
     const { data, error } = await context.supabase
       .from("publication_records")
       .insert({
