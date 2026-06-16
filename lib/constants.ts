@@ -92,6 +92,7 @@ type NavHref =
   | "/dashboard"
   | "/schools"
   | "/team"
+  | "/agents"
   | "/generate"
   | "/assets"
   | "/accounts"
@@ -116,6 +117,7 @@ export const navItems: readonly NavItem[] = [
   { href: "/tasks", label: "发布任务", icon: CalendarDays },
   { href: "/schools", label: "学校管理", icon: School },
   { href: "/team", label: "团队成员", icon: UsersRound, roles: ["admin", "member"] },
+  { href: "/agents", label: "代理管理", icon: UsersRound, roles: ["admin", "member"] },
   { href: "/analytics", label: "数据看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
 ];
