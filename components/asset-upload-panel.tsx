@@ -219,6 +219,7 @@ export function AssetUploadPanel({
       setProgress("");
       router.refresh();
     } catch (error) {
+      setProgress("");
       setMessage(error instanceof Error ? error.message : "上传失败，请稍后重试。");
       setMessageType("error");
     } finally {
