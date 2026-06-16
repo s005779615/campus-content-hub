@@ -24,7 +24,7 @@ export default async function AssetsPage() {
       .returns<SchoolRecord[]>(),
     supabase
       .from("campus_assets")
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("*,schools(name,campus_name,city),profiles!uploader_id(full_name,email)")
       .order("created_at", { ascending: false })
       .limit(1000)
       .returns<CampusAsset[]>(),

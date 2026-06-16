@@ -86,7 +86,7 @@ export async function PATCH(
       .from("campus_assets")
       .update(update)
       .eq("id", id)
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("*,schools(name,campus_name,city),profiles!uploader_id(full_name,email)")
       .single();
 
     if (error) {

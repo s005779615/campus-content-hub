@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         reviewed_by: status === "已通过" ? context.user.id : null,
         reviewed_at: status === "已通过" ? new Date().toISOString() : null
       })
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("*,schools(name,campus_name,city),profiles!uploader_id(full_name,email)")
       .single();
 
     if (error) {

@@ -19,7 +19,7 @@ export default async function SchoolAssetsPage({
       .single<SchoolRecord>(),
     supabase
       .from("campus_assets")
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("*,schools(name,campus_name,city),profiles!uploader_id(full_name,email)")
       .eq("school_id", schoolId)
       .order("created_at", { ascending: false })
       .limit(500)
