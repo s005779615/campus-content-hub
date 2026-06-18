@@ -289,8 +289,9 @@ export default async function DashboardPage() {
         </section>
 
         <section className="panel overflow-hidden">
-          <div className="border-b border-line px-5 py-4">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="text-base font-semibold text-ink">我的校园账号</h2>
+            <Link className="button-secondary text-xs" href="/accounts">新增账号</Link>
           </div>
           <div className="divide-y divide-line">
             {accountRows.map((account) => (
