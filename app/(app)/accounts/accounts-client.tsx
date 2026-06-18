@@ -33,7 +33,7 @@ export function AccountsClient({
   role: UserRole;
 }) {
   const router = useRouter();
-  const manager = role === "admin";
+  const manager = role === "admin" || (role as string) === "member";
   const [accounts, setAccounts] = useState(initialAccounts);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
