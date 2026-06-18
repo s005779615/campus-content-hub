@@ -36,7 +36,8 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const { data, error } = await ctx.supabase
+  const adminClient = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
+  const { data, error } = await adminClient
     .from("profiles")
     .update(update)
     .eq("id", id)
