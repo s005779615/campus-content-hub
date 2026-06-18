@@ -38,7 +38,7 @@ export default async function TasksPage({
     profile.role === "admin"
       ? supabase
           .from("platform_accounts")
-          .select("*,schools(name,campus_name,city),profiles(full_name,email,role)")
+          .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
           .eq("status", "启用")
           .order("account_name")
           .returns<PlatformAccount[]>()
