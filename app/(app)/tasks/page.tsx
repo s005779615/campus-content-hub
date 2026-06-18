@@ -17,7 +17,7 @@ export default async function TasksPage({
     supabase
       .from("publish_tasks")
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .order("task_date", { ascending: false })
       .limit(200)
