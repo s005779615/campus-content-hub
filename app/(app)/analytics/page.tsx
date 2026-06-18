@@ -10,7 +10,7 @@ import type { ContentRecord, PublicationRecord, SchoolRecord } from "@/lib/types
 export default async function AnalyticsPage() {
   const { supabase, profile } = await requireAuth();
 
-  const [{ data: contents }, { data: publications }, { data: schools }] = await Promise.all([
+  const [{ data: contents }, { data: publications }, { data: schools }, { data: metrics }] = await Promise.all([
     supabase
       .from("content_records")
       .select("*,schools(name,campus_name,city),profiles(full_name,email)")
@@ -21,25 +21,41 @@ export default async function AnalyticsPage() {
       .select("*,schools(name,campus_name),profiles(full_name,email),content_records(content_type,content_goal)")
       .order("created_at", { ascending: false })
       .returns<PublicationRecord[]>(),
-    supabase.from("schools").select("*").order("name").returns<SchoolRecord[]>()
+    supabase.from("schools").select("*").order("name").returns<SchoolRecord[]>(),
+    supabase.from("publish_metrics").select("*, schools(name, campus_name), profiles!user_id(full_name, email)").order("created_at", { ascending: false }).limit(500)
   ]);
 
   const contentRows: ContentRecord[] = contents ?? [];
   const publicationRows: PublicationRecord[] = publications ?? [];
-  const totalViews = publicationRows.reduce((sum, item) => sum + item.views, 0);
-  const totalPrivateMessages = publicationRows.reduce(
-    (sum, item) => sum + item.private_messages,
-    0
-  );
-  const totalWechatAdds = publicationRows.reduce((sum, item) => sum + item.wechat_adds, 0);
-  const totalConversions = publicationRows.reduce((sum, item) => sum + item.conversions, 0);
+  const metricRows = (metrics ?? []) as Array<{
+    id: string; user_id: string; platform: string; views: number;
+    schools?: { name: string; campus_name: string | null };
+    profiles?: { full_name: string | null; email: string };
+  }>;
 
-  const bySchool = groupBy(publicationRows, (item) => item.schools?.name ?? "未命名学校");
-  const byMember = groupBy(
-    publicationRows,
-    (item) => item.profiles?.full_name || item.profiles?.email || "未命名成员"
-  );
-  const byPlatform = groupBy(publicationRows, (item) => item.platform);
+  // 合并指标：publication_records + publish_metrics
+  const pubViews = publicationRows.reduce((s, i) => s + i.views, 0);
+  const metViews = metricRows.reduce((s, i) => s + (i.views || 0), 0);
+  const totalViews = pubViews + metViews;
+  const totalPrivateMessages = publicationRows.reduce((s, i) => s + i.private_messages, 0);
+  const totalWechatAdds = publicationRows.reduce((s, i) => s + i.wechat_adds, 0);
+  const totalConversions = publicationRows.reduce((s, i) => s + i.conversions, 0);
+  const totalContent = contentRows.length + metricRows.length;
+
+  // 按学校
+  const schoolContentMap: Record<string, number> = {};
+  for (const c of contentRows) { const k = c.schools?.name ?? "未命名"; schoolContentMap[k] = (schoolContentMap[k] || 0) + 1; }
+  for (const m of metricRows) { const k = m.schools?.name ?? "未命名"; schoolContentMap[k] = (schoolContentMap[k] || 0) + 1; }
+
+  // 按成员
+  const memberMap: Record<string, number> = {};
+  for (const p of publicationRows) { const k = p.profiles?.full_name || (p.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名"; memberMap[k] = (memberMap[k] || 0) + 1; }
+  for (const m of metricRows) { const k = m.profiles?.full_name || (m.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名"; memberMap[k] = (memberMap[k] || 0) + 1; }
+
+  // 按平台
+  const platformViews: Record<string, number> = {};
+  for (const p of publicationRows) { platformViews[p.platform] = (platformViews[p.platform] || 0) + (p.views || 0); }
+  for (const m of metricRows) { platformViews[m.platform] = (platformViews[m.platform] || 0) + (m.views || 0); }
   const topPrivateMessages = [...publicationRows]
     .sort((a, b) => b.private_messages - a.private_messages)
     .slice(0, 8);
@@ -69,7 +85,7 @@ export default async function AnalyticsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="内容数量" value={contentRows.length} icon={BarChart3} />
+        <StatCard title="内容数量" value={totalContent} icon={BarChart3} />
         <StatCard title="播放量" value={compactNumber(totalViews)} icon={Send} />
         <StatCard title="私信人数" value={totalPrivateMessages} icon={MessageCircle} />
         <StatCard title="加微信人数" value={totalWechatAdds} icon={UsersRound} />
@@ -78,24 +94,20 @@ export default async function AnalyticsPage() {
 
       <div className="mt-5 grid gap-5 xl:grid-cols-3">
         <RankingPanel title="学校内容数量">
-          {Object.entries(groupBy(contentRows, (item) => item.schools?.name ?? "未命名学校")).map(
-            ([name, rows]) => (
-              <MetricRow key={name} label={name} value={`${rows.length} 条`} />
+          {Object.entries(schoolContentMap).sort((a,b) => b[1] - a[1]).map(
+            ([name, count]) => (
+              <MetricRow key={name} label={name} value={`${count} 条`} />
             )
           )}
         </RankingPanel>
         <RankingPanel title="成员发布数量">
-          {Object.entries(byMember).map(([name, rows]) => (
-            <MetricRow key={name} label={name} value={`${rows.length} 条`} />
+          {Object.entries(memberMap).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
+            <MetricRow key={name} label={name} value={`${count} 条`} />
           ))}
         </RankingPanel>
         <RankingPanel title="平台数据">
-          {Object.entries(byPlatform).map(([name, rows]) => (
-            <MetricRow
-              key={name}
-              label={<PlatformBadge platform={name} />}
-              value={`${rows.reduce((sum, item) => sum + item.views, 0)} 播放`}
-            />
+          {Object.entries(platformViews).sort((a,b) => b[1] - a[1]).map(([name, v]) => (
+            <MetricRow key={name} label={<PlatformBadge platform={name} />} value={`${compactNumber(v)} 播放`} />
           ))}
         </RankingPanel>
       </div>

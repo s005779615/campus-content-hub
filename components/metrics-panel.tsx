@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, Link2, Loader2, Plus, Search, TrendingUp } from "lucide-react";
+import { BarChart3, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { compactNumber } from "@/lib/format";
@@ -69,6 +69,15 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
       .then(d => { setMetrics(d.metrics ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  async function deleteMetric(id: string) {
+    if (!confirm("确定删除？")) return;
+    const res = await fetch(`/api/publish-metrics?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setMetrics(prev => prev.filter(m => m.id !== id));
+      router.refresh();
+    }
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -180,6 +189,7 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
                 <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">收藏</th>
                 <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">评论</th>
                 <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">分享</th>
+                <th className="px-5 py-3 w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/50">
@@ -200,9 +210,14 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
                   <td className="px-5 py-3 text-[13px] tabular-nums">{compactNumber(m.favorites)}</td>
                   <td className="px-5 py-3 text-[13px] tabular-nums">{compactNumber(m.comments)}</td>
                   <td className="px-5 py-3 text-[13px] tabular-nums">{compactNumber(m.shares)}</td>
+                  <td className="px-5 py-3">
+                    <button className="button-ghost text-[11px] text-muted-light hover:text-coral-600 p-1" onClick={() => deleteMetric(m.id)} type="button" title="删除">
+                      <Trash2 size={12} />
+                    </button>
+                  </td>
                 </tr>
               )) : (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-[13px] text-muted-light">暂无作品数据，点「上传数据」开始</td></tr>
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-[13px] text-muted-light">暂无作品数据，点「上传数据」开始</td></tr>
               )}
             </tbody>
           </table>
