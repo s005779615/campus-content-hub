@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, Link2, Loader2, Plus, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { BarChart3, Link2, Loader2, Plus, Search, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { compactNumber } from "@/lib/format";
 import type { SchoolRecord } from "@/lib/types";
@@ -29,6 +29,39 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [fetching, setFetching] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  async function autoFetch() {
+    if (!formRef.current) return;
+    const fd = new FormData(formRef.current);
+    const postUrl = String(fd.get("post_url") || "");
+    const platform = String(fd.get("platform") || "");
+    if (!postUrl || !platform) { setMessage("请先填写链接和平台"); return; }
+
+    setFetching(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/fetch-metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: postUrl, platform }),
+      });
+      const d = await res.json();
+      if (res.ok && !d.error) {
+        // Auto-fill form fields
+        const inputs = formRef.current.querySelectorAll("input");
+        const map: Record<string, string> = { views: String(d.views ?? 0), likes: String(d.likes ?? 0), favorites: String(d.favorites ?? 0), comments: String(d.comments ?? 0), shares: String(d.shares ?? 0) };
+        inputs.forEach((inp: HTMLInputElement) => { if (map[inp.name]) inp.value = map[inp.name]; });
+        const titleInput = formRef.current.querySelector("input[name='post_title']") as HTMLInputElement;
+        if (titleInput && d.title) titleInput.value = d.title;
+        setMessage(`已自动填充：${d.views?.toLocaleString() ?? 0} 播放 · ${d.likes?.toLocaleString() ?? 0} 赞`);
+      } else {
+        setMessage(d.error || "抓取失败，请手动填写");
+      }
+    } catch { setMessage("抓取出错，请手动填写"); }
+    setFetching(false);
+  }
 
   useEffect(() => {
     fetch("/api/publish-metrics")
@@ -109,7 +142,7 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
         </div>
 
         {showForm ? (
-          <form className="grid gap-3 border-b border-line/50 bg-canvas-alt/40 px-5 py-4 sm:grid-cols-3" onSubmit={submit}>
+          <form ref={formRef} className="grid gap-3 border-b border-line/50 bg-canvas-alt/40 px-5 py-4 sm:grid-cols-3" onSubmit={submit}>
             <select className="form-input" name="school_id" required>
               <option value="">选择学校</option>
               {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -126,6 +159,10 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
             <input className="form-input" name="comments" type="number" placeholder="评论数" />
             <input className="form-input" name="shares" type="number" placeholder="分享数" />
             <div className="sm:col-span-3 flex items-center gap-3">
+              <button className="button-secondary text-xs" disabled={fetching} type="button" onClick={autoFetch}>
+                {fetching ? <Loader2 className="animate-spin" size={13} /> : <Search size={13} />}
+                自动读取
+              </button>
               <button className="button-primary text-xs" disabled={saving} type="submit">
                 {saving ? <Loader2 className="animate-spin" size={13} /> : <Link2 size={13} />}
                 保存
