@@ -142,7 +142,7 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
         </div>
 
         {showForm ? (
-          <form ref={formRef} className="grid gap-3 border-b border-line/50 bg-canvas-alt/40 px-5 py-4 sm:grid-cols-3" onSubmit={submit}>
+          <form ref={formRef} className="grid gap-3 border-b border-line/50 bg-canvas-alt/40 px-5 py-4 sm:grid-cols-4" onSubmit={submit}>
             <select className="form-input" name="school_id" required>
               <option value="">选择学校</option>
               {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -152,22 +152,19 @@ export function MetricsPanel({ schools }: { schools: SchoolRecord[] }) {
               <option value="抖音">抖音</option>
             </select>
             <input className="form-input sm:col-span-2" name="post_url" required placeholder="作品链接" />
-            <input className="form-input" name="post_title" placeholder="标题（选填）" />
-            <input className="form-input" name="views" type="number" placeholder="播放量" />
-            <input className="form-input" name="likes" type="number" placeholder="点赞数" />
-            <input className="form-input" name="favorites" type="number" placeholder="收藏数" />
-            <input className="form-input" name="comments" type="number" placeholder="评论数" />
-            <input className="form-input" name="shares" type="number" placeholder="分享数" />
-            <div className="sm:col-span-3 flex items-center gap-3">
-              <button className="button-secondary text-xs" disabled={fetching} type="button" onClick={autoFetch}>
-                {fetching ? <Loader2 className="animate-spin" size={13} /> : <Search size={13} />}
-                自动读取
-              </button>
+            <div className="sm:col-span-4 grid grid-cols-4 gap-2">
+              <input className="form-input" name="views" type="number" placeholder="播放量" />
+              <input className="form-input" name="likes" type="number" placeholder="点赞数" />
+              <input className="form-input" name="comments" type="number" placeholder="评论数" />
+              <input className="form-input" name="shares" type="number" placeholder="分享数" />
+            </div>
+            <div className="sm:col-span-4 flex items-center gap-3">
               <button className="button-primary text-xs" disabled={saving} type="submit">
-                {saving ? <Loader2 className="animate-spin" size={13} /> : <Link2 size={13} />}
+                {saving ? <Loader2 className="animate-spin" size={13} /> : <Plus size={13} />}
                 保存
               </button>
               {message ? <span className="text-xs text-coral-600">{message}</span> : null}
+              <span className="text-[11px] text-muted-light">在抖音/小红书 APP 里查看数据，填入上方表格</span>
             </div>
           </form>
         ) : null}
