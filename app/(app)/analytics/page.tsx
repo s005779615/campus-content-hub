@@ -1,15 +1,16 @@
 import { BarChart3, MessageCircle, School, Send, TrendingUp, UsersRound } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { MetricsPanel } from "@/components/metrics-panel";
 import { PlatformBadge } from "@/components/platform-badge";
 import { StatCard } from "@/components/stat-card";
 import { requireAuth } from "@/lib/auth";
 import { compactNumber, formatDateTime } from "@/lib/format";
-import type { ContentRecord, PublicationRecord } from "@/lib/types";
+import type { ContentRecord, PublicationRecord, SchoolRecord } from "@/lib/types";
 
 export default async function AnalyticsPage() {
   const { supabase, profile } = await requireAuth();
 
-  const [{ data: contents }, { data: publications }] = await Promise.all([
+  const [{ data: contents }, { data: publications }, { data: schools }] = await Promise.all([
     supabase
       .from("content_records")
       .select("*,schools(name,campus_name,city),profiles(full_name,email)")
@@ -19,7 +20,8 @@ export default async function AnalyticsPage() {
       .from("publication_records")
       .select("*,schools(name,campus_name),profiles(full_name,email),content_records(content_type,content_goal)")
       .order("created_at", { ascending: false })
-      .returns<PublicationRecord[]>()
+      .returns<PublicationRecord[]>(),
+    supabase.from("schools").select("*").order("name").returns<SchoolRecord[]>()
   ]);
 
   const contentRows: ContentRecord[] = contents ?? [];
@@ -158,6 +160,7 @@ export default async function AnalyticsPage() {
           </div>
         </section>
       </div>
+      <MetricsPanel schools={schools ?? []} />
     </>
   );
 }
