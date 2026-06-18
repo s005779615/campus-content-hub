@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data, error } = await context.supabase
     .from("platform_accounts")
-    .select("*,schools(name,campus_name,city),profiles(full_name,email,role)")
+    .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       },
       { onConflict: "user_id,school_id,platform" }
     )
-    .select("*,schools(name,campus_name,city),profiles(full_name,email,role)")
+    .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
     .single();
 
   if (error) {
