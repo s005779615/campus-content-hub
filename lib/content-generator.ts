@@ -297,58 +297,72 @@ async function generateWithChatCompletions(
   // 降低温度，输出更确定 = 稍快（0.82→0.72）
   body.temperature = 0.72;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 秒超时（DeepSeek 推理较慢）
+  const MAX_RETRIES = 2;
+  let lastError: Error | null = null;
 
-  let response: Response;
-  try {
-    response = await fetch(provider.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${provider.apiKey}`
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } catch (fetchError) {
-    clearTimeout(timeoutId);
-    const reason = fetchError instanceof Error ? fetchError.message : "unknown";
-    throw new Error(
-      `${provider.label} 网络请求失败（${reason}）。端点：${provider.endpoint.replace(/\/chat\/completions$/, "/...")}`
-    );
-  }
-  clearTimeout(timeoutId);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s，Vercel Pro 60s 留余量
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`${provider.label} 调用失败：${response.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`);
-  }
+    try {
+      const response = await fetch(provider.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${provider.apiKey}`
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
 
-  const data = (await response.json()) as {
-    choices?: Array<{
-      message?: {
-        content?: string;
-        reasoning_content?: string;
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        const err = new Error(`${provider.label} 调用失败：${response.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`);
+        // 服务端错误可重试
+        if (response.status >= 500 && attempt < MAX_RETRIES) {
+          lastError = err;
+          if (process.env.NODE_ENV === "development") console.warn(`[AI] 重试 ${attempt + 1}/${MAX_RETRIES}...`);
+          await new Promise(r => setTimeout(r, 1000)); // 等1秒再重试
+          continue;
+        }
+        throw err;
+      }
+
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
       };
-    }>;
-  };
-  const msg = data.choices?.[0]?.message;
-  let content = msg?.content;
+      const msg = data.choices?.[0]?.message;
+      let content = msg?.content;
 
-  // DeepSeek 等推理模型可能把实际内容放在 reasoning_content
-  if (!content && msg?.reasoning_content) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[AI] content 为空，回退使用 reasoning_content");
+      if (!content && msg?.reasoning_content) {
+        if (process.env.NODE_ENV === "development") console.warn("[AI] content 为空，回退使用 reasoning_content");
+        content = msg.reasoning_content;
+      }
+
+      if (!content) {
+        throw new Error(`${provider.label} 返回内容为空。`);
+      }
+
+      return parseGeneratedJson(content, provider.label) as GeneratedOutput;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      const reason = fetchError instanceof Error ? fetchError.message : "unknown";
+      const isTimeout = reason.includes("abort") || reason.includes("timeout") || reason.includes("AbortError");
+
+      if ((isTimeout || reason.includes("fetch")) && attempt < MAX_RETRIES) {
+        lastError = fetchError instanceof Error ? fetchError : new Error(reason);
+        if (process.env.NODE_ENV === "development") console.warn(`[AI] 重试 ${attempt + 1}/${MAX_RETRIES}（${reason.slice(0, 40)}）...`);
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+
+      throw fetchError instanceof Error ? fetchError : new Error(reason);
     }
-    content = msg.reasoning_content;
   }
 
-  if (!content) {
-    throw new Error(`${provider.label} 返回内容为空。`);
-  }
-
-  return parseGeneratedJson(content, provider.label) as GeneratedOutput;
+  throw lastError || new Error(`${provider.label} 生成失败，已重试 ${MAX_RETRIES} 次`);
 }
 
 function parseGeneratedJson(content: string, providerLabel: string) {
