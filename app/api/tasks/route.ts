@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     let query = context.supabase
       .from("publish_tasks")
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .order("task_date", { ascending: false });
 
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         created_by: context.user.id
       })
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .single();
 
