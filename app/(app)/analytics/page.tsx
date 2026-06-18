@@ -59,13 +59,16 @@ export default async function AnalyticsPage() {
   const topPrivateMessages = [...publicationRows]
     .sort((a, b) => b.private_messages - a.private_messages)
     .slice(0, 8);
-  const schoolConversionRows = Object.entries(bySchool)
-    .map(([schoolName, rows]) => ({
-      schoolName,
-      privateMessages: rows.reduce((sum, item) => sum + item.private_messages, 0),
-      wechatAdds: rows.reduce((sum, item) => sum + item.wechat_adds, 0),
-      conversions: rows.reduce((sum, item) => sum + item.conversions, 0)
-    }))
+  const schoolConvMap: Record<string, { pm: number; wc: number; cv: number }> = {};
+  for (const p of publicationRows) {
+    const k = p.schools?.name ?? "未命名";
+    if (!schoolConvMap[k]) schoolConvMap[k] = { pm: 0, wc: 0, cv: 0 };
+    schoolConvMap[k].pm += p.private_messages;
+    schoolConvMap[k].wc += p.wechat_adds;
+    schoolConvMap[k].cv += p.conversions;
+  }
+  const schoolConversionRows = Object.entries(schoolConvMap)
+    .map(([schoolName, v]) => ({ schoolName, privateMessages: v.pm, wechatAdds: v.wc, conversions: v.cv }))
     .sort((a, b) => b.conversions - a.conversions);
 
   const today = new Date().toISOString().slice(0, 10);
