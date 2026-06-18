@@ -72,7 +72,7 @@ export default async function DashboardPage() {
     supabase
       .from("publish_tasks")
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .eq("task_date", today)
       .order("created_at", { ascending: false })
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
     supabase
       .from("publish_tasks")
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .order("task_date", { ascending: false })
       .limit(8)
@@ -103,7 +103,7 @@ export default async function DashboardPage() {
       : Promise.resolve({ data: [] as Profile[] }),
     supabase
       .from("platform_accounts")
-      .select("*,schools(name,campus_name,city),profiles(full_name,email,role)")
+      .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
       .eq("status", "启用")
       .order("account_name")
       .returns<PlatformAccount[]>()
