@@ -66,7 +66,7 @@ export async function PATCH(
       })
       .eq("id", id)
       .select(
-        "*,schools(name,campus_name),profiles(full_name,email),platform_accounts(account_name,account_positioning,platform)"
+        "*,schools(name,campus_name),profiles!user_id(full_name,email),platform_accounts(account_name,account_positioning,platform)"
       )
       .single();
 
