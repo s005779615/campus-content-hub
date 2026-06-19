@@ -1,3 +1,5 @@
+export const maxDuration = 120;
+
 import { NextResponse } from "next/server";
 import { campusGrowthPlannerPrompt } from "@/prompts/campusGrowthPlanner";
 
