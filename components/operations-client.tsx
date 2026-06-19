@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart3, Brain, Calendar, ClipboardList, Download, Loader2, Plus, Target, TrendingUp, Trash2, Zap } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { compactNumber } from "@/lib/format";
 import type { SchoolRecord } from "@/lib/types";
@@ -145,10 +145,48 @@ export function OperationsClient({
     }
   }, [selectedSchoolId, selectedSchool]);
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function startPoll(jobId: string) {
+    pollRef.current = setInterval(async () => {
+      const res = await fetch(`/api/operations/plan?jobId=${jobId}`);
+      const d = await res.json();
+      if (!d.job) return;
+      setMessage(d.job.progress || "处理中...");
+      if (d.job.status === "completed" && d.job.plan_data) {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setPlan(d.job.plan_data);
+        setActiveTab("result");
+        setLoading(false);
+        setMessage("");
+        // Refresh history
+        const hr = await fetch("/api/operations/plans");
+        const hd = await hr.json();
+        setPlans(hd.plans ?? []);
+      }
+      if (d.job.status === "failed") {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setMessage(d.job.error_message || "生成失败");
+        setLoading(false);
+      }
+    }, 2000);
+  }
+
+  async function cancelJob() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setLoading(false);
+    setMessage("已取消");
+  }
+
   async function generatePlan() {
     if (!selectedSchoolId || !selectedSchool) return;
     setLoading(true);
-    setMessage("AI 正在分析校区数据...");
+    setMessage("正在创建任务...");
     try {
       const res = await fetch("/api/operations/plan", {
         method: "POST",
@@ -180,19 +218,13 @@ export function OperationsClient({
         }),
       });
       const d = await res.json();
-      if (res.ok && d.plan) {
-        setPlan(d.plan);
-        setActiveTab("result");
-        setMessage("");
-        // Refresh history
-        const hr = await fetch("/api/operations/plans");
-        const hd = await hr.json();
-        setPlans(hd.plans ?? []);
+      if (res.ok && d.jobId) {
+        startPoll(d.jobId);
       } else {
-        setMessage(d.error || "生成失败");
+        setMessage(d.error || "创建任务失败");
+        setLoading(false);
       }
-    } catch { setMessage("网络错误"); }
-    setLoading(false);
+    } catch { setMessage("网络错误"); setLoading(false); }
   }
 
   async function loadPlan(id: string) {
@@ -344,6 +376,7 @@ export function OperationsClient({
               {loading ? <Loader2 className="animate-spin" size={15} /> : <Zap size={15} />}
               {loading ? "AI 分析中..." : "生成运营方案"}
             </button>
+            {loading ? <button className="button-ghost text-xs text-coral-600" onClick={cancelJob} type="button">取消</button> : null}
             {message ? <span className="text-[13px] text-coral-600">{message}</span> : null}
           </div>
         </div>

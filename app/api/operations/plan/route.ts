@@ -1,96 +1,15 @@
-// 跟 /api/generate 一样用默认 Node.js runtime，不用 Edge
-
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
-import { campusGrowthPlannerPrompt } from "@/prompts/campusGrowthPlanner";
-
-async function callAI(prompt: string, opts?: { temperature?: number }) {
-  const apiKey = process.env.DOUBAO_API_KEY || process.env.ARK_API_KEY;
-  if (!apiKey) throw new Error("AI Key 未配置");
-
-  const rawBase = process.env.DOUBAO_BASE_URL || "";
-  const endpoint = rawBase && /^https?:\/\//i.test(rawBase)
-    ? `${rawBase.replace(/\/+$/, "")}/chat/completions`
-    : "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-
-  const model = process.env.DOUBAO_MODEL || "deepseek-v4-pro-260425";
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: opts?.temperature ?? 0.3,
-      max_tokens: 1024,
-      stream: true,
-    }),
-    signal: AbortSignal.timeout(50000),
-  });
-  if (!res.ok) throw new Error(`AI 服务返回 ${res.status}`);
-
-  // 流式读取，拼接所有 chunk
-  let content = "";
-  const decoder = new TextDecoder();
-  const reader = res.body?.getReader();
-  if (!reader) throw new Error("不支持流式读取");
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    for (const line of chunk.split("\n")) {
-      if (line.startsWith("data: ")) {
-        const data = line.slice(6).trim();
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data);
-          content += parsed.choices?.[0]?.delta?.content || "";
-        } catch { /* skip malformed */ }
-      }
-    }
-  }
-  return { content };
-}
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const ctx = await getAuthContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json() as {
-    school?: {
-      name: string;
-      campusName?: string;
-      totalStudents: number;
-      newStudents: number;
-      maleRatio: number;
-      dormCount: number;
-      semesterStart: string;
-      militaryStart?: string;
-      registerStart?: string;
-    };
-    businesses?: {
-      phoneCards: boolean;
-      bedding: boolean;
-      partTime: boolean;
-      errands: boolean;
-      secondHand: boolean;
-      competitorCount: number;
-      lastYearDeals: number;
-      lastYearRate: string;
-    };
-    socialStats?: Array<{
-      platform: string;
-      accountCount: number;
-      publishCount: number;
-      exposure: number;
-      likes: number;
-      favorites: number;
-      comments: number;
-      privateMessages: number;
-      groups: number;
-      deals: number;
-    }>;
+    school?: { name: string; campusName?: string; totalStudents: number; newStudents: number; maleRatio: number; dormCount: number; semesterStart: string; militaryStart?: string; registerStart?: string };
+    businesses?: { phoneCards: boolean; bedding: boolean; partTime: boolean; errands: boolean; secondHand: boolean; competitorCount: number; lastYearDeals: number; lastYearRate: string };
+    socialStats?: Array<{ platform: string; accountCount: number; publishCount: number; exposure: number; likes: number; favorites: number; comments: number; privateMessages: number; groups: number; deals: number }>;
     schoolId?: string;
   };
 
@@ -98,61 +17,70 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "缺少学校或业务数据" }, { status: 400 });
   }
 
-  try {
-    const prompt = campusGrowthPlannerPrompt({
-      school: {
-        name: body.school.name,
-        campusName: body.school.campusName,
-        totalStudents: body.school.totalStudents || 0,
-        newStudents: body.school.newStudents || 0,
-        maleRatio: body.school.maleRatio || 0.5,
-        dormCount: body.school.dormCount || 0,
-        semesterStart: body.school.semesterStart || "",
-        militaryStart: body.school.militaryStart,
-        registerStart: body.school.registerStart,
-      },
-      businesses: {
-        phoneCards: body.businesses.phoneCards ?? false,
-        bedding: body.businesses.bedding ?? false,
-        partTime: body.businesses.partTime ?? false,
-        errands: body.businesses.errands ?? false,
-        secondHand: body.businesses.secondHand ?? false,
-        competitorCount: body.businesses.competitorCount || 0,
-        lastYearDeals: body.businesses.lastYearDeals || 0,
-        lastYearRate: body.businesses.lastYearRate || "0%",
-      },
-      socialStats: body.socialStats || [],
-    });
+  // Create job
+  const admin = createSupabaseAdminClient();
+  const { data: job, error } = await admin
+    .from("operations_jobs")
+    .insert({
+      user_id: ctx.user.id,
+      school_id: body.schoolId || null,
+      school_name: body.school?.name || "",
+      status: "pending",
+    })
+    .select("id")
+    .single();
 
-    const result = await callAI(prompt, { temperature: 0.7 });
-
-    let parsed: any = {};
-    const text = (result?.content || "").trim();
-    // Strip markdown code fences
-    const jsonStr = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch {
-      return NextResponse.json({
-        error: "AI 返回格式异常，请重试",
-        raw: text.slice(0, 400),
-      }, { status: 422 });
-    }
-
-    // Save to history
-    if (body.schoolId) {
-      await ctx.supabase.from("operations_plans").insert({
-        user_id: ctx.profile.id,
-        school_id: body.schoolId,
-        plan_data: parsed,
-        school_level: parsed.schoolLevel || "",
-        investment_level: parsed.investmentLevel || "",
-      });
-    }
-
-    return NextResponse.json({ plan: parsed });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "AI 调用失败";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  if (error || !job) {
+    return NextResponse.json({ error: "创建任务失败" }, { status: 500 });
   }
+
+  // Fire worker asynchronously — don't await, return immediately
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://campus-content-hub.vercel.app";
+  fetch(`${baseUrl}/api/operations/plan/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jobId: job.id,
+      school: body.school,
+      businesses: body.businesses,
+      socialStats: body.socialStats || [],
+      schoolId: body.schoolId,
+    }),
+  }).catch(() => {}); // fire-and-forget
+
+  return NextResponse.json({ jobId: job.id, status: "pending" });
+}
+
+export async function GET(request: Request) {
+  const ctx = await getAuthContext();
+  if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const jobId = searchParams.get("jobId");
+  if (!jobId) return NextResponse.json({ error: "缺少 jobId" }, { status: 400 });
+
+  const { data: job, error } = await ctx.supabase
+    .from("operations_jobs")
+    .select("id, status, progress, plan_data, error_message, created_at")
+    .eq("id", jobId)
+    .eq("user_id", ctx.user.id)
+    .single();
+
+  if (error || !job) return NextResponse.json({ error: "未找到任务" }, { status: 404 });
+
+  return NextResponse.json({ job });
+}
+
+export async function DELETE(request: Request) {
+  const ctx = await getAuthContext();
+  if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const jobId = searchParams.get("jobId");
+  if (!jobId) return NextResponse.json({ error: "缺少 jobId" }, { status: 400 });
+
+  const admin = createSupabaseAdminClient();
+  await admin.from("operations_jobs").update({ status: "cancelled", progress: "已取消", updated_at: new Date().toISOString() }).eq("id", jobId).eq("user_id", ctx.user.id);
+
+  return NextResponse.json({ ok: true });
 }
