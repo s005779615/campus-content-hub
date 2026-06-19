@@ -145,40 +145,10 @@ export function OperationsClient({
     }
   }, [selectedSchoolId, selectedSchool]);
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  function startPoll(jobId: string) {
-    pollRef.current = setInterval(async () => {
-      const res = await fetch(`/api/operations/plan?jobId=${jobId}`);
-      const d = await res.json();
-      if (!d.job) return;
-      setMessage(d.job.progress || "处理中...");
-      if (d.job.status === "completed" && d.job.plan_data) {
-        clearInterval(pollRef.current!);
-        pollRef.current = null;
-        setPlan(d.job.plan_data);
-        setActiveTab("result");
-        setLoading(false);
-        setMessage("");
-        // Refresh history
-        const hr = await fetch("/api/operations/plans");
-        const hd = await hr.json();
-        setPlans(hd.plans ?? []);
-      }
-      if (d.job.status === "failed") {
-        clearInterval(pollRef.current!);
-        pollRef.current = null;
-        setMessage(d.job.error_message || "生成失败");
-        setLoading(false);
-      }
-    }, 2000);
-  }
+  const abortRef = useRef<AbortController | null>(null);
 
   async function cancelJob() {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
     setLoading(false);
     setMessage("已取消");
   }
@@ -186,11 +156,17 @@ export function OperationsClient({
   async function generatePlan() {
     if (!selectedSchoolId || !selectedSchool) return;
     setLoading(true);
-    setMessage("正在创建任务...");
+    setMessage("AI 正在分析...");
+    setPlan(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch("/api/operations/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           school: {
             name: selectedSchool.name,
@@ -217,14 +193,55 @@ export function OperationsClient({
           schoolId: selectedSchoolId,
         }),
       });
-      const d = await res.json();
-      if (res.ok && d.jobId) {
-        startPoll(d.jobId);
-      } else {
-        setMessage(d.error || "创建任务失败");
-        setLoading(false);
+
+      if (!res.ok || !res.body) { setMessage("请求失败"); setLoading(false); return; }
+
+      // Read SSE stream
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let charCount = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const evt = JSON.parse(line.slice(6));
+              if (evt.type === "start") {
+                setMessage("AI 正在生成方案...");
+              } else if (evt.type === "chunk") {
+                charCount += (evt.text || "").length;
+                if (charCount % 200 < 20) setMessage(`已生成 ${charCount} 字符`);
+              } else if (evt.type === "done" && evt.plan) {
+                setPlan(evt.plan);
+                setActiveTab("result");
+                setLoading(false);
+                setMessage("");
+                const hr = await fetch("/api/operations/plans");
+                setPlans((await hr.json()).plans ?? []);
+                return;
+              } else if (evt.type === "error") {
+                setMessage(evt.message || "生成失败");
+                setLoading(false);
+                return;
+              }
+            } catch { /* skip */ }
+          }
+        }
       }
-    } catch { setMessage("网络错误"); setLoading(false); }
+      setMessage("流意外结束");
+    } catch (e: any) {
+      if (e?.name === "AbortError") { setMessage("已取消"); }
+      else { setMessage("网络中断"); }
+    }
+    setLoading(false);
+    abortRef.current = null;
   }
 
   async function loadPlan(id: string) {
