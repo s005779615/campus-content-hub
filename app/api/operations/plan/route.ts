@@ -24,12 +24,34 @@ async function callAI(prompt: string, opts?: { temperature?: number }) {
       messages: [{ role: "user", content: prompt }],
       temperature: opts?.temperature ?? 0.3,
       max_tokens: 2048,
+      stream: true,
     }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(28000),
   });
   if (!res.ok) throw new Error(`AI 服务返回 ${res.status}`);
-  const data = await res.json() as any;
-  return { content: data?.choices?.[0]?.message?.content || "" };
+
+  // 流式读取，拼接所有 chunk
+  let content = "";
+  const decoder = new TextDecoder();
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("不支持流式读取");
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split("\n")) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data);
+          content += parsed.choices?.[0]?.delta?.content || "";
+        } catch { /* skip malformed */ }
+      }
+    }
+  }
+  return { content };
 }
 
 export async function POST(request: Request) {
