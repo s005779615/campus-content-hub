@@ -1,3 +1,5 @@
+export const maxDuration = 120;
+
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
 import { campusGrowthPlannerPrompt } from "@/prompts/campusGrowthPlanner";
@@ -19,8 +21,8 @@ async function callAI(prompt: string, opts?: { temperature?: number }) {
     body: JSON.stringify({
       model,
       messages: [{ role: "user", content: prompt }],
-      temperature: opts?.temperature ?? 0.7,
-      max_tokens: 4096,
+      temperature: opts?.temperature ?? 0.3,
+      max_tokens: 2048,
     }),
     signal: AbortSignal.timeout(50000),
   });
