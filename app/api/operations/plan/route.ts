@@ -1,5 +1,4 @@
-export const runtime = "edge";
-export const maxDuration = 25;
+// 跟 /api/generate 一样用默认 Node.js runtime，不用 Edge
 
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
@@ -26,7 +25,7 @@ async function callAI(prompt: string, opts?: { temperature?: number }) {
       max_tokens: 1024,
       stream: true,
     }),
-    signal: AbortSignal.timeout(28000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`AI 服务返回 ${res.status}`);
 
