@@ -190,41 +190,17 @@ export function OperationsClient({
         }),
       });
 
-      if (!res.ok || !res.body) { setMessage("请求失败"); setLoading(false); return; }
+      if (!res.ok) { setMessage("请求失败"); setLoading(false); return; }
 
-      // Read SSE
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() || "";
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const evt = JSON.parse(line.slice(6));
-              if (evt.type === "phase") setMessage(evt.msg);
-              else if (evt.type === "progress") { /* heartbeat */ }
-              else if (evt.type === "done" && evt.plan) {
-                setPlan(evt.plan);
-                setActiveTab("result");
-                setLoading(false);
-                setMessage("");
-                fetch("/api/operations/plans").then(r => r.json()).then(d => setPlans(d.plans ?? []));
-                return;
-              } else if (evt.type === "error") {
-                setMessage(evt.message || "失败");
-                setLoading(false);
-                return;
-              }
-            } catch { /* skip */ }
-          }
-        }
+      const d = await res.json();
+      if (d.plan) {
+        setPlan(d.plan);
+        setActiveTab("result");
+        setMessage("");
+        fetch("/api/operations/plans").then(r => r.json()).then(d2 => setPlans(d2.plans ?? []));
+      } else {
+        setMessage(d.error || "生成失败");
       }
-      setMessage("连接中断");
     } catch (e: any) {
       if (e?.name === "AbortError") setMessage("已取消");
       else setMessage("网络中断");
