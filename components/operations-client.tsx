@@ -380,6 +380,38 @@ export function OperationsClient({
             ) : null}
           </div>
 
+          {/* Platform comparison chart */}
+          {socialStats.filter(s => s.exposure > 0 || s.likes > 0).length > 0 ? (
+            <section className="panel p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4"><BarChart3 size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">新媒体数据对比</h2></div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {(["exposure","likes","privateMessages"] as const).map((metric, mi) => {
+                  const maxVal = Math.max(...socialStats.map(s => Number(s[metric]) || 0), 1);
+                  const labels: Record<string, string> = { exposure: "曝光", likes: "点赞", privateMessages: "私信" };
+                  const colors = ["bg-brand-400", "bg-coral-400", "bg-emerald-400"];
+                  return (
+                    <div key={metric} className="space-y-2">
+                      <div className="text-[11px] font-bold uppercase text-muted-light">{labels[metric]}</div>
+                      {socialStats.filter(s => Number(s[metric]) > 0).map((s, si) => {
+                        const val = Number(s[metric]) || 0;
+                        const pct = Math.max((val / maxVal) * 100, 3);
+                        return (
+                          <div key={s.platform} className="flex items-center gap-2">
+                            <span className="text-[11px] w-10 text-right shrink-0 text-muted">{s.platform}</span>
+                            <div className="flex-1 bg-canvas-alt rounded h-5 relative overflow-hidden">
+                              <div className={`absolute inset-y-0 left-0 rounded ${colors[si % 3]}`} style={{ width: `${pct}%` }} />
+                              <span className="absolute inset-0 flex items-center pl-2 text-[10px] font-semibold text-white mix-blend-difference">{compactNumber(val)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
           {/* Stage analysis */}
           <section className="panel p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-4"><Target size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">运营阶段分析</h2></div>
