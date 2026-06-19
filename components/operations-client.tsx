@@ -190,9 +190,9 @@ export function OperationsClient({
         }),
       });
 
-      if (!res.ok) { setMessage("请求失败"); setLoading(false); return; }
-
       const d = await res.json();
+      if (!res.ok) { setMessage(d.error || `请求失败 (${res.status})`); setLoading(false); return; }
+
       if (d.plan) {
         setPlan(d.plan);
         setActiveTab("result");
