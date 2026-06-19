@@ -90,7 +90,8 @@ export function OperationsClient({
   // Form state
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [schoolForm, setSchoolForm] = useState({ totalStudents: 0, newStudents: 0, maleRatio: 0.5, dormCount: 0, semesterStart: "", militaryStart: "", registerStart: "", campusName: "" });
-  const [businesses, setBusinesses] = useState<Record<string, boolean | number | string>>({ phoneCards: false, bedding: false, partTime: false, errands: false, secondHand: false, competitorCount: 0, lastYearDeals: 0, lastYearRate: "0%" });
+  const [bizCheck, setBizCheck] = useState({ phoneCards: false, bedding: false, partTime: false, errands: false, secondHand: false });
+  const [bizMeta, setBizMeta] = useState({ competitorCount: "", lastYearDeals: "", lastYearRate: "" });
   const [socialStats, setSocialStats] = useState(defaultSocialStats);
 
   // Result state
@@ -133,14 +134,14 @@ export function OperationsClient({
             registerStart: schoolForm.registerStart || undefined,
           },
           businesses: {
-            phoneCards: !!businesses.phoneCards,
-            bedding: !!businesses.bedding,
-            partTime: !!businesses.partTime,
-            errands: !!businesses.errands,
-            secondHand: !!businesses.secondHand,
-            competitorCount: Number(businesses.competitorCount) || 0,
-            lastYearDeals: Number(businesses.lastYearDeals) || 0,
-            lastYearRate: String(businesses.lastYearRate || "0%"),
+            phoneCards: bizCheck.phoneCards,
+            bedding: bizCheck.bedding,
+            partTime: bizCheck.partTime,
+            errands: bizCheck.errands,
+            secondHand: bizCheck.secondHand,
+            competitorCount: Number(bizMeta.competitorCount) || 0,
+            lastYearDeals: Number(bizMeta.lastYearDeals) || 0,
+            lastYearRate: bizMeta.lastYearRate || "0%",
           },
           socialStats: socialStats.filter(s => s.accountCount > 0 || s.publishCount > 0),
           schoolId: selectedSchoolId,
@@ -254,16 +255,16 @@ export function OperationsClient({
             </div>
             <div className="flex flex-wrap gap-2">
               {BUSINESS_TYPES.map(b => (
-                <label key={b.key} className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-[12px] cursor-pointer transition-colors ${businesses[b.key] ? "bg-brand-50 border-brand-300 text-brand-700" : "bg-canvas-alt border-line text-muted"}`}>
-                  <input type="checkbox" className="sr-only" checked={!!businesses[b.key]} onChange={e => setBusinesses(prev => ({ ...prev, [b.key]: e.target.checked }))} />
+                <label key={b.key} className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-[12px] cursor-pointer transition-colors ${bizCheck[b.key as keyof typeof bizCheck] ? "bg-brand-50 border-brand-300 text-brand-700" : "bg-canvas-alt border-line text-muted"}`}>
+                  <input type="checkbox" className="sr-only" checked={bizCheck[b.key as keyof typeof bizCheck]} onChange={e => setBizCheck(prev => ({ ...prev, [b.key]: e.target.checked }))} />
                   {b.label}
                 </label>
               ))}
             </div>
             <div className="grid gap-2">
-              <input className="form-input" type="number" placeholder="竞争团队数量" value={businesses.competitorCount || ""} onChange={e => setBusinesses(prev => ({ ...prev, competitorCount: Number(e.target.value) }))} />
-              <input className="form-input" type="number" placeholder="往年成交人数" value={businesses.lastYearDeals || ""} onChange={e => setBusinesses(prev => ({ ...prev, lastYearDeals: Number(e.target.value) }))} />
-              <input className="form-input" placeholder="往年转化率" value={businesses.lastYearRate || ""} onChange={e => setBusinesses(prev => ({ ...prev, lastYearRate: e.target.value }))} />
+              <input className="form-input" type="number" placeholder="竞争团队数量" value={bizMeta.competitorCount} onChange={e => setBizMeta(prev => ({ ...prev, competitorCount: e.target.value }))} />
+              <input className="form-input" type="number" placeholder="往年成交人数" value={bizMeta.lastYearDeals} onChange={e => setBizMeta(prev => ({ ...prev, lastYearDeals: e.target.value }))} />
+              <input className="form-input" placeholder="往年转化率" value={bizMeta.lastYearRate} onChange={e => setBizMeta(prev => ({ ...prev, lastYearRate: e.target.value }))} />
             </div>
           </section>
 

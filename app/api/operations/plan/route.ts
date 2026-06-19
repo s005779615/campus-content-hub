@@ -1,7 +1,29 @@
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
-import { callAI } from "@/lib/content-generator";
 import { campusGrowthPlannerPrompt } from "@/prompts/campusGrowthPlanner";
+
+async function callAI(prompt: string, opts?: { temperature?: number }) {
+  const apiKey = process.env.DOUBAO_API_KEY || process.env.ARK_API_KEY;
+  const baseUrl = process.env.DOUBAO_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";
+  const model = process.env.DOUBAO_MODEL || "deepseek-v4-pro-260425";
+
+  if (!apiKey) throw new Error("AI 未配置");
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: opts?.temperature ?? 0.7,
+      max_tokens: 4096,
+    }),
+    signal: AbortSignal.timeout(50000),
+  });
+  if (!res.ok) throw new Error(`AI 服务返回 ${res.status}`);
+  const data = await res.json() as any;
+  return { content: data?.choices?.[0]?.message?.content || "" };
+}
 
 export async function POST(request: Request) {
   const ctx = await getAuthContext();
@@ -74,10 +96,10 @@ export async function POST(request: Request) {
       socialStats: body.socialStats || [],
     });
 
-    const result = await callAI(prompt, { temperature: 0.7, max_tokens: 4096, json_response: true });
+    const result = await callAI(prompt, { temperature: 0.7 });
 
     let parsed: any = {};
-    const text = (result?.content || result?.text || "").trim();
+    const text = (result?.content || "").trim();
     // Strip markdown code fences
     const jsonStr = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
     try {

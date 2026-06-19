@@ -100,7 +100,8 @@ type NavHref =
   | "/library"
   | "/tasks"
   | "/analytics"
-  | "/settings";
+  | "/settings"
+  | "/operations";
 
 type NavItem = {
   href: NavHref;
