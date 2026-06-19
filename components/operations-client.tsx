@@ -1,0 +1,514 @@
+"use client";
+
+import { BarChart3, Brain, Calendar, ClipboardList, Download, Loader2, Plus, Target, TrendingUp, Trash2, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { PlatformBadge } from "@/components/platform-badge";
+import { compactNumber } from "@/lib/format";
+import type { SchoolRecord } from "@/lib/types";
+
+type PlanRecord = {
+  id: string;
+  school_id: string;
+  school_level: string;
+  investment_level: string;
+  created_at: string;
+  schools?: { name: string; campus_name: string | null };
+};
+
+type PlanData = {
+  schoolLevel: string;
+  investmentLevel: string;
+  diagnosis: Array<{ issue: string; reason: string; suggestion: string }>;
+  stageAnalysis: {
+    currentStage: string;
+    stageGoal: string;
+    recommendedContent: string[];
+    focusActions: string[];
+  };
+  plan15Days: Array<{
+    date: string;
+    goal: string;
+    platformTasks: Array<{ platform: string; title: string; direction: string }>;
+    commentGuide: string;
+    dmScript: string;
+    groupAction: string;
+    personInCharge: string;
+    expectedExposure: number;
+    expectedPM: number;
+    expectedGroups: number;
+    expectedDeals: number;
+  }>;
+  privateDomain?: {
+    commentGuides: string[];
+    dmScripts: string[];
+    groupScript: string;
+    groupOps: string[];
+    closingTips: string[];
+  };
+  teamTasks?: Record<string, string[]>;
+  risks?: Array<{ risk: string; level: string; trigger: string; solution: string }>;
+  prediction?: {
+    exposure: number;
+    privateMessages: number;
+    groups: number;
+    orders: number;
+    conversionRate: string;
+  };
+};
+
+const PLATFORMS = ["小红书", "抖音", "视频号"];
+const BUSINESS_TYPES = [
+  { key: "phoneCards", label: "电话卡" },
+  { key: "bedding", label: "被子" },
+  { key: "partTime", label: "兼职" },
+  { key: "errands", label: "跑腿" },
+  { key: "secondHand", label: "二手" },
+];
+
+const defaultSocialStats = PLATFORMS.map(p => ({
+  platform: p,
+  accountCount: 0,
+  publishCount: 0,
+  exposure: 0,
+  likes: 0,
+  favorites: 0,
+  comments: 0,
+  privateMessages: 0,
+  groups: 0,
+  deals: 0,
+}));
+
+export function OperationsClient({
+  profile,
+  schools,
+  initialPlans,
+}: {
+  profile: { role: string };
+  schools: SchoolRecord[];
+  initialPlans: PlanRecord[];
+}) {
+  // Form state
+  const [selectedSchoolId, setSelectedSchoolId] = useState("");
+  const [schoolForm, setSchoolForm] = useState({ totalStudents: 0, newStudents: 0, maleRatio: 0.5, dormCount: 0, semesterStart: "", militaryStart: "", registerStart: "", campusName: "" });
+  const [businesses, setBusinesses] = useState<Record<string, boolean | number | string>>({ phoneCards: false, bedding: false, partTime: false, errands: false, secondHand: false, competitorCount: 0, lastYearDeals: 0, lastYearRate: "0%" });
+  const [socialStats, setSocialStats] = useState(defaultSocialStats);
+
+  // Result state
+  const [plan, setPlan] = useState<PlanData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<"form" | "result" | "history">("form");
+  const [plans, setPlans] = useState<PlanRecord[]>(initialPlans);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  const selectedSchool = schools.find(s => s.id === selectedSchoolId);
+
+  useEffect(() => {
+    if (selectedSchool) {
+      setSchoolForm(f => ({
+        ...f,
+        campusName: selectedSchool.campus_name || "",
+      }));
+    }
+  }, [selectedSchoolId, selectedSchool]);
+
+  async function generatePlan() {
+    if (!selectedSchoolId || !selectedSchool) return;
+    setLoading(true);
+    setMessage("AI 正在分析校区数据...");
+    try {
+      const res = await fetch("/api/operations/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          school: {
+            name: selectedSchool.name,
+            campusName: selectedSchool.campus_name || schoolForm.campusName,
+            totalStudents: schoolForm.totalStudents,
+            newStudents: schoolForm.newStudents,
+            maleRatio: schoolForm.maleRatio,
+            dormCount: schoolForm.dormCount,
+            semesterStart: schoolForm.semesterStart,
+            militaryStart: schoolForm.militaryStart || undefined,
+            registerStart: schoolForm.registerStart || undefined,
+          },
+          businesses: {
+            phoneCards: !!businesses.phoneCards,
+            bedding: !!businesses.bedding,
+            partTime: !!businesses.partTime,
+            errands: !!businesses.errands,
+            secondHand: !!businesses.secondHand,
+            competitorCount: Number(businesses.competitorCount) || 0,
+            lastYearDeals: Number(businesses.lastYearDeals) || 0,
+            lastYearRate: String(businesses.lastYearRate || "0%"),
+          },
+          socialStats: socialStats.filter(s => s.accountCount > 0 || s.publishCount > 0),
+          schoolId: selectedSchoolId,
+        }),
+      });
+      const d = await res.json();
+      if (res.ok && d.plan) {
+        setPlan(d.plan);
+        setActiveTab("result");
+        setMessage("");
+        // Refresh history
+        const hr = await fetch("/api/operations/plans");
+        const hd = await hr.json();
+        setPlans(hd.plans ?? []);
+      } else {
+        setMessage(d.error || "生成失败");
+      }
+    } catch { setMessage("网络错误"); }
+    setLoading(false);
+  }
+
+  async function loadPlan(id: string) {
+    setLoading(true);
+    const res = await fetch(`/api/operations/plans/${id}`);
+    const d = await res.json();
+    if (res.ok && d.plan) {
+      setPlan(d.plan.plan_data);
+      setSelectedPlanId(id);
+      setActiveTab("result");
+    }
+    setLoading(false);
+  }
+
+  async function deletePlan(id: string) {
+    if (!confirm("确定删除？")) return;
+    await fetch(`/api/operations/plans/${id}`, { method: "DELETE" });
+    setPlans(p => p.filter(x => x.id !== id));
+    if (selectedPlanId === id) {
+      setPlan(null);
+      setActiveTab("form");
+    }
+  }
+
+  function updateSocialStat(idx: number, field: string, value: string) {
+    setSocialStats(prev => prev.map((s, i) => i === idx ? { ...s, [field]: field === "platform" ? value : Number(value) || 0 } : s));
+  }
+
+  // ==================== RENDER ====================
+
+  return (
+    <div className="mt-5 space-y-5">
+      {/* Tab bar */}
+      <div className="flex gap-2 border-b border-line/50 pb-0">
+        {([
+          ["form", "数据录入", ClipboardList],
+          ["result", "AI 方案", Brain],
+          ["history", "历史记录", Calendar],
+        ] as const).map(([key, label, Icon]) => (
+          <button
+            key={key}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${activeTab === key ? "border-brand-500 text-ink" : "border-transparent text-muted hover:text-ink-soft"}`}
+            onClick={() => setActiveTab(key)}
+            type="button"
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Form Tab */}
+      {activeTab === "form" ? (
+        <div className="grid gap-5 xl:grid-cols-3">
+          {/* School info */}
+          <section className="panel p-5 sm:p-6 space-y-4 xl:col-span-2">
+            <div>
+              <h2 className="text-sm font-bold text-ink">学校信息</h2>
+              <p className="mt-0.5 text-xs text-muted-light">选择已录入的学校或补充校区数据</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select className="form-input" value={selectedSchoolId} onChange={e => setSelectedSchoolId(e.target.value)}>
+                <option value="">选择学校</option>
+                {schools.map(s => <option key={s.id} value={s.id}>{s.name}{s.campus_name ? ` · ${s.campus_name}` : ""}</option>)}
+              </select>
+              <input className="form-input" placeholder="校区名称" value={schoolForm.campusName} onChange={e => setSchoolForm(f => ({ ...f, campusName: e.target.value }))} />
+              <div className="flex gap-2">
+                <input className="form-input" type="number" placeholder="学生总人数" value={schoolForm.totalStudents || ""} onChange={e => setSchoolForm(f => ({ ...f, totalStudents: Number(e.target.value) }))} />
+                <input className="form-input" type="number" placeholder="新生人数" value={schoolForm.newStudents || ""} onChange={e => setSchoolForm(f => ({ ...f, newStudents: Number(e.target.value) }))} />
+              </div>
+              <div className="flex gap-2">
+                <select className="form-input" value={schoolForm.maleRatio} onChange={e => setSchoolForm(f => ({ ...f, maleRatio: Number(e.target.value) }))}>
+                  <option value={0.5}>男女 5:5</option>
+                  <option value={0.4}>男女 4:6</option>
+                  <option value={0.45}>男女 4.5:5.5</option>
+                  <option value={0.55}>男女 5.5:4.5</option>
+                  <option value={0.6}>男女 6:4</option>
+                </select>
+                <input className="form-input" type="number" placeholder="宿舍数量" value={schoolForm.dormCount || ""} onChange={e => setSchoolForm(f => ({ ...f, dormCount: Number(e.target.value) }))} />
+              </div>
+              <input className="form-input" type="date" placeholder="开学时间" value={schoolForm.semesterStart} onChange={e => setSchoolForm(f => ({ ...f, semesterStart: e.target.value }))} />
+              <input className="form-input" type="date" placeholder="军训时间" value={schoolForm.militaryStart} onChange={e => setSchoolForm(f => ({ ...f, militaryStart: e.target.value }))} />
+              <input className="form-input" type="date" placeholder="报到时间" value={schoolForm.registerStart} onChange={e => setSchoolForm(f => ({ ...f, registerStart: e.target.value }))} />
+            </div>
+          </section>
+
+          {/* Business info */}
+          <section className="panel p-5 sm:p-6 space-y-4">
+            <div>
+              <h2 className="text-sm font-bold text-ink">校园业务</h2>
+              <p className="mt-0.5 text-xs text-muted-light">勾选经营业务</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {BUSINESS_TYPES.map(b => (
+                <label key={b.key} className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-[12px] cursor-pointer transition-colors ${businesses[b.key] ? "bg-brand-50 border-brand-300 text-brand-700" : "bg-canvas-alt border-line text-muted"}`}>
+                  <input type="checkbox" className="sr-only" checked={!!businesses[b.key]} onChange={e => setBusinesses(prev => ({ ...prev, [b.key]: e.target.checked }))} />
+                  {b.label}
+                </label>
+              ))}
+            </div>
+            <div className="grid gap-2">
+              <input className="form-input" type="number" placeholder="竞争团队数量" value={businesses.competitorCount || ""} onChange={e => setBusinesses(prev => ({ ...prev, competitorCount: Number(e.target.value) }))} />
+              <input className="form-input" type="number" placeholder="往年成交人数" value={businesses.lastYearDeals || ""} onChange={e => setBusinesses(prev => ({ ...prev, lastYearDeals: Number(e.target.value) }))} />
+              <input className="form-input" placeholder="往年转化率" value={businesses.lastYearRate || ""} onChange={e => setBusinesses(prev => ({ ...prev, lastYearRate: e.target.value }))} />
+            </div>
+          </section>
+
+          {/* Social stats */}
+          <section className="panel overflow-hidden xl:col-span-3">
+            <div className="border-b border-line/50 px-5 py-3.5">
+              <h2 className="text-sm font-bold text-ink">新媒体数据</h2>
+              <p className="mt-0.5 text-xs text-muted-light">填写各平台现有数据，留空则视为新起号</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left">
+                <thead>
+                  <tr className="border-b border-line/50 bg-canvas-alt/30">
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">平台</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">账号</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">发布</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">曝光</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">赞</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">收藏</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">评论</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">私信</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">进群</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">成交</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/50">
+                  {socialStats.map((s, i) => (
+                    <tr key={s.platform}>
+                      <td className="px-4 py-2"><PlatformBadge platform={s.platform} /></td>
+                      {["accountCount", "publishCount", "exposure", "likes", "favorites", "comments", "privateMessages", "groups", "deals"].map(f => (
+                        <td key={f} className="px-4 py-2">
+                          <input className="form-input text-center text-[12px] py-1.5 px-1 w-16" type="number" placeholder="0" value={s[f as keyof typeof s] || ""} onChange={e => updateSocialStat(i, f, e.target.value)} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Generate button */}
+          <div className="xl:col-span-3 flex items-center gap-4">
+            <button className="button-primary" disabled={loading || !selectedSchoolId} onClick={generatePlan} type="button">
+              {loading ? <Loader2 className="animate-spin" size={15} /> : <Zap size={15} />}
+              {loading ? "AI 分析中..." : "生成运营方案"}
+            </button>
+            {message ? <span className="text-[13px] text-coral-600">{message}</span> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Result Tab */}
+      {activeTab === "result" && plan ? (
+        <div className="space-y-5">
+          {/* Top cards */}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="panel p-4 text-center">
+              <div className="text-[11px] uppercase tracking-wider text-muted-light">校区评级</div>
+              <div className={`mt-1 text-2xl font-extrabold ${plan.schoolLevel === "A级" ? "text-emerald-600" : plan.schoolLevel === "B级" ? "text-amber-600" : "text-slate-600"}`}>{plan.schoolLevel || "-"}</div>
+            </div>
+            <div className="panel p-4 text-center">
+              <div className="text-[11px] uppercase tracking-wider text-muted-light">投入等级</div>
+              <div className="mt-1 text-2xl font-extrabold text-ink">{plan.investmentLevel || "-"}</div>
+            </div>
+            {plan.prediction ? (
+              <>
+                <div className="panel p-4 text-center">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-light">预计曝光</div>
+                  <div className="mt-1 text-2xl font-extrabold text-brand-600">{compactNumber(plan.prediction.exposure)}</div>
+                </div>
+                <div className="panel p-4 text-center">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-light">预计私信</div>
+                  <div className="mt-1 text-2xl font-extrabold text-brand-600">{compactNumber(plan.prediction.privateMessages)}</div>
+                </div>
+                <div className="panel p-4 text-center">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-light">预计转化率</div>
+                  <div className="mt-1 text-2xl font-extrabold text-emerald-600">{plan.prediction.conversionRate || "-"}</div>
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          {/* Stage analysis */}
+          <section className="panel p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-4"><Target size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">运营阶段分析</h2></div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-[13px] font-semibold text-ink">当前阶段：{plan.stageAnalysis?.currentStage || "-"}</span>
+              <span className="text-[13px] text-muted">{plan.stageAnalysis?.stageGoal}</span>
+            </div>
+            {plan.stageAnalysis?.recommendedContent?.length ? (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {plan.stageAnalysis.recommendedContent.map((c, i) => <span key={i} className="badge bg-brand-50 text-brand-700 text-[11px]">{c}</span>)}
+              </div>
+            ) : null}
+            {plan.stageAnalysis?.focusActions?.length ? (
+              <ul className="space-y-1">
+                {plan.stageAnalysis.focusActions.map((a, i) => <li key={i} className="text-[13px] text-muted flex gap-2"><Zap size={12} className="mt-0.5 shrink-0 text-amber-500" />{a}</li>)}
+              </ul>
+            ) : null}
+          </section>
+
+          {/* 15-Day Plan */}
+          <section className="panel overflow-hidden">
+            <div className="border-b border-line/50 px-5 py-3.5 flex items-center gap-2">
+              <Calendar size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">15 天运营计划</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1000px] text-left">
+                <thead>
+                  <tr className="border-b border-line/50 bg-canvas-alt/30">
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">日期</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">目标</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">选题</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">评论引导</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">私信话术</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">预计曝光</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">负责人</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/50">
+                  {plan.plan15Days?.map((day, i) => (
+                    <tr key={i} className="transition-colors hover:bg-canvas-alt/20">
+                      <td className="px-4 py-3 text-[12px] font-semibold whitespace-nowrap">{day.date}</td>
+                      <td className="px-4 py-3 text-[13px] max-w-[140px]">{day.goal}</td>
+                      <td className="px-4 py-3">
+                        {day.platformTasks?.map((t, j) => (
+                          <div key={j} className="text-[12px] mb-0.5">
+                            <PlatformBadge platform={t.platform} />
+                            <span className="ml-1.5 text-ink-soft">{t.title}</span>
+                          </div>
+                        ))}
+                      </td>
+                      <td className="px-4 py-3 text-[12px] text-muted max-w-[160px]">{day.commentGuide}</td>
+                      <td className="px-4 py-3 text-[12px] text-muted max-w-[160px]">{day.dmScript}</td>
+                      <td className="px-4 py-3 text-[13px] font-semibold tabular-nums">{compactNumber(day.expectedExposure)}</td>
+                      <td className="px-4 py-3 text-[12px]">{day.personInCharge}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Diagnosis + Team Tasks + Risks */}
+          <div className="grid gap-5 xl:grid-cols-3">
+            <section className="panel p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-3"><Brain size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">AI 诊断</h2></div>
+              <div className="space-y-3">
+                {plan.diagnosis?.map((d, i) => (
+                  <div key={i} className="border-l-2 border-coral-400 bg-coral-50/50 pl-3 py-1.5 pr-2 rounded-r">
+                    <div className="text-[13px] font-semibold text-ink">{d.issue}</div>
+                    <div className="text-[12px] text-muted mt-0.5">{d.reason}</div>
+                    <div className="text-[12px] text-brand-600 mt-0.5">→ {d.suggestion}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {plan.teamTasks ? (
+              <section className="panel p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3"><ClipboardList size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">团队任务</h2></div>
+                <div className="space-y-3">
+                  {Object.entries(plan.teamTasks).map(([role, tasks]) => (
+                    <div key={role}>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-muted-light mb-1">{role}</div>
+                      <ul className="space-y-0.5">
+                        {(tasks as string[]).map((t, i) => <li key={i} className="text-[12px] text-ink-soft">· {t}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {plan.risks?.length ? (
+              <section className="panel p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3"><TrendingUp size={16} className="text-coral-500" /><h2 className="text-sm font-bold text-ink">风险预警</h2></div>
+                <div className="space-y-3">
+                  {plan.risks.map((r, i) => (
+                    <div key={i} className={`border-l-2 pl-3 py-1.5 pr-2 rounded-r ${r.level === "高" ? "border-coral-400 bg-coral-50/50" : r.level === "中" ? "border-amber-400 bg-amber-50/50" : "border-slate-300 bg-canvas-alt"}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-ink">{r.risk}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${r.level === "高" ? "bg-coral-100 text-coral-700" : r.level === "中" ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"}`}>{r.level}风险</span>
+                      </div>
+                      <div className="text-[12px] text-muted mt-0.5">{r.trigger}</div>
+                      <div className="text-[12px] text-brand-600 mt-0.5">→ {r.solution}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          {/* Private domain */}
+          {plan.privateDomain ? (
+            <section className="panel p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-3"><Target size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">私域转化方案</h2></div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div><div className="text-[11px] font-bold uppercase text-muted-light mb-1.5">评论区引导</div><ul className="space-y-1">{plan.privateDomain.commentGuides?.map((c, i) => <li key={i} className="text-[12px] text-ink-soft">· {c}</li>)}</ul></div>
+                <div><div className="text-[11px] font-bold uppercase text-muted-light mb-1.5">私信话术</div><ul className="space-y-1">{plan.privateDomain.dmScripts?.map((c, i) => <li key={i} className="text-[12px] text-ink-soft">· {c}</li>)}</ul></div>
+                <div><div className="text-[11px] font-bold uppercase text-muted-light mb-1.5">群运营</div><p className="text-[12px] text-ink-soft">{plan.privateDomain.groupScript}</p><ul className="space-y-1 mt-1">{plan.privateDomain.groupOps?.map((c, i) => <li key={i} className="text-[12px] text-ink-soft">· {c}</li>)}</ul></div>
+                <div><div className="text-[11px] font-bold uppercase text-muted-light mb-1.5">成交建议</div><ul className="space-y-1">{plan.privateDomain.closingTips?.map((c, i) => <li key={i} className="text-[12px] text-ink-soft">· {c}</li>)}</ul></div>
+              </div>
+            </section>
+          ) : null}
+
+          {/* Bottom actions */}
+          <div className="flex items-center gap-3">
+            <button className="button-secondary text-xs" onClick={() => { setActiveTab("form"); setPlan(null); }} type="button"><Plus size={13} /> 新建方案</button>
+            <button className="button-secondary text-xs" onClick={() => { const el = document.createElement("a"); el.href = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(plan, null, 2))}`; el.download = "运营方案.json"; el.click(); }} type="button"><Download size={13} /> 导出 JSON</button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* History Tab */}
+      {activeTab === "history" ? (
+        <section className="panel overflow-hidden">
+          <div className="border-b border-line/50 px-5 py-3.5 flex items-center gap-2">
+            <Calendar size={16} className="text-brand-500" /><h2 className="text-sm font-bold text-ink">历史方案</h2>
+          </div>
+          {plans.length ? (
+            <div className="divide-y divide-line/50">
+              {plans.map(p => (
+                <div key={p.id} className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-canvas-alt/30">
+                  <div>
+                    <div className="text-[13px] font-semibold text-ink">{p.schools?.name ?? "未知学校"}{p.schools?.campus_name ? ` · ${p.schools.campus_name}` : ""}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-[11px] font-bold ${p.school_level === "A级" ? "text-emerald-600" : p.school_level === "B级" ? "text-amber-600" : "text-slate-500"}`}>{p.school_level || "-"}</span>
+                      <span className="text-[11px] text-muted">投入 {p.investment_level || "-"}</span>
+                      <span className="text-[11px] text-muted-light">{new Date(p.created_at).toLocaleDateString("zh-CN")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="button-secondary text-[11px]" onClick={() => loadPlan(p.id)} type="button">查看</button>
+                    <button className="button-ghost text-[11px] text-muted hover:text-coral-600" onClick={() => deletePlan(p.id)} type="button"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-5 py-10 text-center text-[13px] text-muted-light">暂无历史方案</div>
+          )}
+        </section>
+      ) : null}
+    </div>
+  );
+}

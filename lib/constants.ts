@@ -3,6 +3,7 @@ import {
   BookOpenText,
   CalendarDays,
   FileText,
+  Target,
   GraduationCap,
   Images,
   LayoutDashboard,
@@ -110,6 +111,7 @@ type NavItem = {
 
 export const navItems: readonly NavItem[] = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/operations", label: "账号运营", icon: Target },
   { href: "/generate", label: "内容生成", icon: WandSparkles },
   { href: "/assets", label: "校园素材", icon: Images },
   { href: "/accounts", label: "校园分配", icon: Smartphone },
