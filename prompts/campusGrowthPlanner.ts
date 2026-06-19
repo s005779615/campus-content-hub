@@ -81,7 +81,6 @@ ${input.socialStats.filter(s => s.accountCount > 0 || s.publishCount > 0).length
 9. prediction: {exposure, privateMessages, groups, orders, conversionRate}
 
 约束：非官方校园号定位 | 禁止大预算方案 | 低预算自然流量 | 电话卡/被子/兼职场景`;
-`.trim();
 }
 
 export const CAMPUS_GROWTH_JSON_SCHEMA = {
