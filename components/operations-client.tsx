@@ -152,7 +152,7 @@ export function OperationsClient({
   async function generatePlan() {
     if (!selectedSchoolId || !selectedSchool) return;
     setLoading(true);
-    setMessage("AI 正在分析...");
+    setMessage("AI 正在分阶段分析（校区评级+诊断+策略+15天计划）...");
     setPlan(null);
 
     const controller = new AbortController();
@@ -190,51 +190,19 @@ export function OperationsClient({
         }),
       });
 
-      if (!res.ok || !res.body) { setMessage("请求失败"); setLoading(false); return; }
-
-      // Read SSE stream
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let charCount = 0;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const evt = JSON.parse(line.slice(6));
-              if (evt.type === "start") {
-                setMessage("AI 正在生成方案...");
-              } else if (evt.type === "chunk") {
-                charCount += (evt.text || "").length;
-                if (charCount % 200 < 20) setMessage(`已生成 ${charCount} 字符`);
-              } else if (evt.type === "done" && evt.plan) {
-                setPlan(evt.plan);
-                setActiveTab("result");
-                setLoading(false);
-                setMessage("");
-                const hr = await fetch("/api/operations/plans");
-                setPlans((await hr.json()).plans ?? []);
-                return;
-              } else if (evt.type === "error") {
-                setMessage(evt.message || "生成失败");
-                setLoading(false);
-                return;
-              }
-            } catch { /* skip */ }
-          }
-        }
+      const d = await res.json();
+      if (res.ok && d.plan) {
+        setPlan(d.plan);
+        setActiveTab("result");
+        setMessage("");
+        const hr = await fetch("/api/operations/plans");
+        setPlans((await hr.json()).plans ?? []);
+      } else {
+        setMessage(d.error || "生成失败");
       }
-      setMessage("流意外结束");
     } catch (e: any) {
-      if (e?.name === "AbortError") { setMessage("已取消"); }
-      else { setMessage("网络中断"); }
+      if (e?.name === "AbortError") setMessage("已取消");
+      else setMessage("网络中断");
     }
     setLoading(false);
     abortRef.current = null;
