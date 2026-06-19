@@ -30,7 +30,7 @@ export default async function GeneratePage({
       : Promise.resolve({ data: null as TaskRecord | null }),
     supabase
       .from("campus_assets")
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email)")
       .eq("status", "已通过")
       .eq("can_generate", true)
       .order("created_at", { ascending: false })

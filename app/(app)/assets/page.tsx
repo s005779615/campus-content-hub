@@ -30,7 +30,7 @@ export default async function AssetsPage() {
       .returns<CampusAsset[]>(),
     supabase
       .from("school_assignments")
-      .select("school_id,profiles(full_name,email)")
+      .select("school_id,profiles!user_id(full_name,email)")
       .returns<Assignment[]>()
   ]);
 
