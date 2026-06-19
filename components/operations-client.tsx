@@ -82,10 +82,12 @@ export function OperationsClient({
   profile,
   schools,
   initialPlans,
+  platformAccounts,
 }: {
   profile: { role: string };
   schools: SchoolRecord[];
   initialPlans: PlanRecord[];
+  platformAccounts: Array<{ id: string; school_id: string; user_id: string; platform: string; account_name: string }>;
 }) {
   // Form state
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
@@ -101,6 +103,36 @@ export function OperationsClient({
   const [activeTab, setActiveTab] = useState<"form" | "result" | "history">("form");
   const [plans, setPlans] = useState<PlanRecord[]>(initialPlans);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  // Task sync state
+  const [syncDayIdx, setSyncDayIdx] = useState<number | null>(null);
+  const [syncAccountId, setSyncAccountId] = useState("");
+  const [syncMsg, setSyncMsg] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  async function syncToTask(day: PlanData["plan15Days"][number]) {
+    if (!selectedSchoolId || !syncAccountId) { setSyncMsg("请选择账号"); return; }
+    setSyncing(true);
+    setSyncMsg("");
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platformAccountId: syncAccountId,
+        taskDate: new Date().toISOString().slice(0, 10),
+        contentType: (day.platformTasks?.[0]?.title || day.goal).slice(0, 30),
+        note: `[运营计划] ${day.goal} · ${day.commentGuide}`,
+      }),
+    });
+    if (res.ok) {
+      setSyncMsg("✅ 任务已创建");
+      setTimeout(() => { setSyncDayIdx(null); setSyncMsg(""); setSyncAccountId(""); }, 1200);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setSyncMsg(d.error || "创建失败");
+    }
+    setSyncing(false);
+  }
 
   const selectedSchool = schools.find(s => s.id === selectedSchoolId);
 
@@ -383,6 +415,7 @@ export function OperationsClient({
                     <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">私信话术</th>
                     <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">预计曝光</th>
                     <th className="px-4 py-2.5 text-[11px] font-semibold uppercase text-muted-light">负责人</th>
+                    <th className="px-4 py-2.5 w-24"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/50">
@@ -402,6 +435,23 @@ export function OperationsClient({
                       <td className="px-4 py-3 text-[12px] text-muted max-w-[160px]">{day.dmScript}</td>
                       <td className="px-4 py-3 text-[13px] font-semibold tabular-nums">{compactNumber(day.expectedExposure)}</td>
                       <td className="px-4 py-3 text-[12px]">{day.personInCharge}</td>
+                      <td className="px-4 py-3">
+                        {syncDayIdx === i ? (
+                          <div className="flex items-center gap-1.5">
+                            <select className="form-input text-[11px] py-1 px-1.5 w-28" value={syncAccountId} onChange={e => setSyncAccountId(e.target.value)}>
+                              <option value="">选账号</option>
+                              {platformAccounts.filter(a => !selectedSchoolId || a.school_id === selectedSchoolId).map(a => (
+                                <option key={a.id} value={a.id}>{a.account_name} · {a.platform}</option>
+                              ))}
+                            </select>
+                            <button className="button-primary text-[10px] py-1 px-2" disabled={syncing} onClick={() => syncToTask(day)} type="button">确定</button>
+                            <button className="text-[10px] text-muted hover:text-ink" onClick={() => { setSyncDayIdx(null); setSyncMsg(""); }} type="button">取消</button>
+                            {syncMsg ? <span className="text-[10px] whitespace-nowrap">{syncMsg}</span> : null}
+                          </div>
+                        ) : (
+                          <button className="button-ghost text-[10px] text-brand-600 hover:underline" onClick={() => { setSyncDayIdx(i); setSyncAccountId(""); setSyncMsg(""); }} type="button">创建任务</button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
