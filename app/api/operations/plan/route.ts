@@ -13,8 +13,7 @@ async function callAI(prompt: string, opts?: { temperature?: number }) {
     ? `${rawBase.replace(/\/+$/, "")}/chat/completions`
     : "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
 
-  // 优先用 DOUBAO_FAST_MODEL 或 lite 模型，避免思考模型超时
-  const model = process.env.DOUBAO_FAST_MODEL || "doubao-seed-2-0-lite-260215";
+  const model = process.env.DOUBAO_MODEL || "deepseek-v4-pro-260425";
 
   const res = await fetch(endpoint, {
     method: "POST",
@@ -23,7 +22,7 @@ async function callAI(prompt: string, opts?: { temperature?: number }) {
       model,
       messages: [{ role: "user", content: prompt }],
       temperature: opts?.temperature ?? 0.3,
-      max_tokens: 2048,
+      max_tokens: 1024,
       stream: true,
     }),
     signal: AbortSignal.timeout(28000),
