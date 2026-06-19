@@ -4,12 +4,16 @@ import { campusGrowthPlannerPrompt } from "@/prompts/campusGrowthPlanner";
 
 async function callAI(prompt: string, opts?: { temperature?: number }) {
   const apiKey = process.env.DOUBAO_API_KEY || process.env.ARK_API_KEY;
-  const baseUrl = process.env.DOUBAO_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";
+  if (!apiKey) throw new Error("AI Key 未配置");
+
+  const rawBase = process.env.DOUBAO_BASE_URL || "";
+  const endpoint = rawBase && /^https?:\/\//i.test(rawBase)
+    ? `${rawBase.replace(/\/+$/, "")}/chat/completions`
+    : "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+
   const model = process.env.DOUBAO_MODEL || "deepseek-v4-pro-260425";
 
-  if (!apiKey) throw new Error("AI 未配置");
-
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
     body: JSON.stringify({
