@@ -53,11 +53,19 @@ export async function POST(request: Request) {
   }
 
   // Create streaming response — sends SSE to client
+  // Send headers immediately (triggers Vercel 30s streaming window)
   const encoder = new TextEncoder();
   let fullContent = "";
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Heartbeat: send progress every 5s while waiting for first AI token
+      let heartbeatCount = 0;
+      const heartbeat = setInterval(() => {
+        heartbeatCount += 1;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "progress", msg: `等待 AI 响应 ${heartbeatCount * 5}s...`, jobId })}\n\n`));
+      }, 5000);
+
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "start", jobId })}\n\n`));
 
       const reader = aiRes.body!.getReader();
@@ -81,6 +89,9 @@ export async function POST(request: Request) {
           }
         }
 
+        // Stop heartbeat
+        clearInterval(heartbeat);
+
         // Parse and save
         const jsonStr = fullContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
         let parsed: any;
@@ -100,6 +111,7 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "JSON 解析失败" })}\n\n`));
         }
       } catch (e: any) {
+        clearInterval(heartbeat);
         if (jobId) await admin.from("operations_jobs").update({ status: "failed", error_message: e?.message || "流中断" }).eq("id", jobId);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: e?.message || "中断" })}\n\n`));
       }
