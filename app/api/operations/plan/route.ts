@@ -1,4 +1,5 @@
-export const maxDuration = 120;
+export const runtime = "edge";
+export const maxDuration = 25;
 
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
