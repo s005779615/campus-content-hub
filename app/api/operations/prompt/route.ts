@@ -12,9 +12,6 @@ export async function POST(request: Request) {
     school: body.school || {},
     businesses: body.businesses || {},
     socialStats: body.socialStats || [],
-    usedTopics: body.usedTopics || [],
-    hotTopics: body.hotTopics || [],
-    deadTopics: body.deadTopics || [],
   });
 
   return NextResponse.json({ prompt });
