@@ -1,4 +1,4 @@
-import { BarChart3, MessageCircle, School, Send, TrendingUp, UsersRound } from "lucide-react";
+import { BarChart3, MessageCircle, Send, TrendingUp, UsersRound } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { MetricsPanel } from "@/components/metrics-panel";
 import { PlatformBadge } from "@/components/platform-badge";
@@ -7,218 +7,180 @@ import { requireAuth } from "@/lib/auth";
 import { compactNumber, formatDateTime } from "@/lib/format";
 import type { ContentRecord, PublicationRecord, SchoolRecord } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AnalyticsPage() {
   const { supabase, profile } = await requireAuth();
 
   const [{ data: contents }, { data: publications }, { data: schools }, { data: metrics }] = await Promise.all([
     supabase
       .from("content_records")
-      .select("*,schools(name,campus_name,city),profiles(full_name,email)")
+      .select("id,schools(name,campus_name),profiles(full_name,email)")
       .order("created_at", { ascending: false })
+      .limit(500)
       .returns<ContentRecord[]>(),
     supabase
       .from("publication_records")
-      .select("*,schools(name,campus_name),profiles(full_name,email),content_records(content_type,content_goal)")
+      .select("id,views,platform,private_messages,wechat_adds,conversions,created_at,schools(name,campus_name),profiles(full_name,email),content_records(content_type,content_goal)")
       .order("created_at", { ascending: false })
+      .limit(500)
       .returns<PublicationRecord[]>(),
     supabase.from("schools").select("*").order("name").returns<SchoolRecord[]>(),
-    supabase.from("publish_metrics").select("*, schools(name, campus_name), profiles!user_id(full_name, email)").order("created_at", { ascending: false }).limit(500)
+    supabase.from("publish_metrics").select("id,views,likes,favorites,comments,shares,platform,schools(name,campus_name),profiles!user_id(full_name,email)").order("created_at", { ascending: false }).limit(500),
   ]);
 
-  const contentRows: ContentRecord[] = contents ?? [];
-  const publicationRows: PublicationRecord[] = publications ?? [];
-  const metricRows = (metrics ?? []) as Array<{
-    id: string; user_id: string; platform: string; views: number;
-    schools?: { name: string; campus_name: string | null };
-    profiles?: { full_name: string | null; email: string };
-  }>;
+  const contentRows = (contents ?? []).filter(Boolean);
+  const publicationRows = (publications ?? []).filter(Boolean);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const metricRows: any[] = metrics ?? [];
 
-  // 合并指标：publication_records + publish_metrics
-  const pubViews = publicationRows.reduce((s, i) => s + i.views, 0);
+  // Stats
+  const pubViews = publicationRows.reduce((s, i) => s + (i.views || 0), 0);
   const metViews = metricRows.reduce((s, i) => s + (i.views || 0), 0);
   const totalViews = pubViews + metViews;
-  const totalPrivateMessages = publicationRows.reduce((s, i) => s + i.private_messages, 0);
-  const totalWechatAdds = publicationRows.reduce((s, i) => s + i.wechat_adds, 0);
-  const totalConversions = publicationRows.reduce((s, i) => s + i.conversions, 0);
+  const totalPM = publicationRows.reduce((s, i) => s + (i.private_messages || 0), 0);
+  const totalWechat = publicationRows.reduce((s, i) => s + (i.wechat_adds || 0), 0);
+  const totalConv = publicationRows.reduce((s, i) => s + (i.conversions || 0), 0);
   const totalContent = contentRows.length + metricRows.length;
 
-  // 按学校
-  const schoolContentMap: Record<string, number> = {};
-  for (const c of contentRows) { const k = c.schools?.name ?? "未命名"; schoolContentMap[k] = (schoolContentMap[k] || 0) + 1; }
-  for (const m of metricRows) { const k = m.schools?.name ?? "未命名"; schoolContentMap[k] = (schoolContentMap[k] || 0) + 1; }
-
-  // 按成员
-  const memberMap: Record<string, number> = {};
-  for (const p of publicationRows) { const k = p.profiles?.full_name || (p.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名"; memberMap[k] = (memberMap[k] || 0) + 1; }
-  for (const m of metricRows) { const k = m.profiles?.full_name || (m.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名"; memberMap[k] = (memberMap[k] || 0) + 1; }
-
-  // 按平台
-  const platformViews: Record<string, number> = {};
-  for (const p of publicationRows) { platformViews[p.platform] = (platformViews[p.platform] || 0) + (p.views || 0); }
-  for (const m of metricRows) { platformViews[m.platform] = (platformViews[m.platform] || 0) + (m.views || 0); }
-  const topPrivateMessages = [...publicationRows]
-    .sort((a, b) => b.private_messages - a.private_messages)
-    .slice(0, 8);
-  const schoolConvMap: Record<string, { pm: number; wc: number; cv: number }> = {};
-  for (const p of publicationRows) {
-    const k = p.schools?.name ?? "未命名";
-    if (!schoolConvMap[k]) schoolConvMap[k] = { pm: 0, wc: 0, cv: 0 };
-    schoolConvMap[k].pm += p.private_messages;
-    schoolConvMap[k].wc += p.wechat_adds;
-    schoolConvMap[k].cv += p.conversions;
+  // School aggregation
+  const schoolStats: Record<string, { content: number; views: number; pm: number; wc: number; cv: number; likes: number }> = {};
+  for (const c of contentRows) {
+    const k = c.schools?.name || "未命名";
+    schoolStats[k] = schoolStats[k] || { content: 0, views: 0, pm: 0, wc: 0, cv: 0, likes: 0 };
+    schoolStats[k].content += 1;
   }
-  const schoolConversionRows = Object.entries(schoolConvMap)
-    .map(([schoolName, v]) => ({ schoolName, privateMessages: v.pm, wechatAdds: v.wc, conversions: v.cv }))
-    .sort((a, b) => b.conversions - a.conversions);
+  for (const m of metricRows) {
+    const k = m.schools?.name || "未命名";
+    schoolStats[k] = schoolStats[k] || { content: 0, views: 0, pm: 0, wc: 0, cv: 0, likes: 0 };
+    schoolStats[k].content += 1;
+    schoolStats[k].views += m.views || 0;
+    schoolStats[k].likes += m.likes || 0;
+  }
+  for (const p of publicationRows) {
+    const k = p.schools?.name || "未命名";
+    schoolStats[k] = schoolStats[k] || { content: 0, views: 0, pm: 0, wc: 0, cv: 0, likes: 0 };
+    schoolStats[k].views += p.views || 0;
+    schoolStats[k].pm += p.private_messages || 0;
+    schoolStats[k].wc += p.wechat_adds || 0;
+    schoolStats[k].cv += p.conversions || 0;
+  }
+  const schoolList = Object.entries(schoolStats).sort((a, b) => b[1].views - a[1].views);
+
+  // Member aggregation
+  const memberStats: Record<string, number> = {};
+  for (const p of publicationRows) {
+    const k = p.profiles?.full_name || (p.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名";
+    memberStats[k] = (memberStats[k] || 0) + 1;
+  }
+  for (const m of metricRows) {
+    const k = m.profiles?.full_name || (m.profiles?.email || "").replace(/^u_|@campus\.local$/g, "") || "未命名";
+    memberStats[k] = (memberStats[k] || 0) + 1;
+  }
+  const memberList = Object.entries(memberStats).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  // Platform aggregation
+  const platformStats: Record<string, number> = {};
+  for (const p of publicationRows) { platformStats[p.platform] = (platformStats[p.platform] || 0) + (p.views || 0); }
+  for (const m of metricRows) { platformStats[m.platform] = (platformStats[m.platform] || 0) + (m.views || 0); }
+  const platformList = Object.entries(platformStats).sort((a, b) => b[1] - a[1]);
+
+  // Top publications
+  const topPubs = [...publicationRows].sort((a, b) => (b.private_messages || 0) - (a.private_messages || 0)).slice(0, 10);
 
   const today = new Date().toISOString().slice(0, 10);
-  const dailyLeads = publicationRows
-    .filter((item) => item.created_at?.slice(0, 10) === today)
-    .reduce((sum, item) => sum + item.private_messages + item.wechat_adds, 0);
+  const dailyLeads = publicationRows.filter(p => p.created_at?.slice(0, 10) === today).reduce((s, p) => s + (p.private_messages || 0) + (p.wechat_adds || 0), 0);
 
   return (
     <>
-      <PageHeader
-        title="数据看板"
-        description={
-          profile.role === "admin"
-            ? "管理员可查看全团队发布、私信、加微信和成交表现。"
-            : "查看自己发布内容带来的互动和线索表现。"
-        }
-      />
+      <PageHeader title="数据看板" description="实时汇总全平台内容、播放、互动和转化数据" />
 
+      {/* Top cards */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard title="内容数量" value={totalContent} icon={BarChart3} />
         <StatCard title="播放量" value={compactNumber(totalViews)} icon={Send} />
-        <StatCard title="私信人数" value={totalPrivateMessages} icon={MessageCircle} />
-        <StatCard title="加微信人数" value={totalWechatAdds} icon={UsersRound} />
-        <StatCard title="成交人数" value={totalConversions} icon={TrendingUp} helper={`今日新增线索 ${dailyLeads}`} />
+        <StatCard title="私信人数" value={totalPM} icon={MessageCircle} />
+        <StatCard title="加微信人数" value={totalWechat} icon={UsersRound} />
+        <StatCard title="成交人数" value={totalConv} icon={TrendingUp} helper={`今日新增线索 ${dailyLeads}`} />
       </div>
 
+      {/* Rankings */}
       <div className="mt-5 grid gap-5 xl:grid-cols-3">
-        <RankingPanel title="学校内容数量">
-          {Object.entries(schoolContentMap).sort((a,b) => b[1] - a[1]).map(
-            ([name, count]) => (
-              <MetricRow key={name} label={name} value={`${count} 条`} />
-            )
-          )}
-        </RankingPanel>
-        <RankingPanel title="成员发布数量">
-          {Object.entries(memberMap).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
-            <MetricRow key={name} label={name} value={`${count} 条`} />
-          ))}
-        </RankingPanel>
-        <RankingPanel title="平台数据">
-          {Object.entries(platformViews).sort((a,b) => b[1] - a[1]).map(([name, v]) => (
-            <MetricRow key={name} label={<PlatformBadge platform={name} />} value={`${compactNumber(v)} 播放`} />
-          ))}
-        </RankingPanel>
+        <section className="panel overflow-hidden">
+          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5"><h2 className="text-sm font-bold text-ink">学校排行</h2></div>
+          <div className="divide-y divide-line/50">
+            {schoolList.length ? schoolList.map(([name, s]) => (
+              <div key={name} className="flex items-center justify-between px-5 py-3 hover:bg-canvas-alt/30">
+                <div className="min-w-0 truncate text-[13px] font-medium">{name}</div>
+                <div className="flex items-center gap-3 text-[12px] text-muted shrink-0">
+                  <span>{s.content} 条</span>
+                  <span>{compactNumber(s.views)} 播放</span>
+                  <span>{s.pm} 私信</span>
+                  {s.cv > 0 ? <span className="text-brand-600 font-semibold">{s.cv} 成交</span> : null}
+                </div>
+              </div>
+            )) : <div className="px-5 py-8 text-center text-[13px] text-muted-light">暂无数据</div>}
+          </div>
+        </section>
+
+        <section className="panel overflow-hidden">
+          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5"><h2 className="text-sm font-bold text-ink">成员排行</h2></div>
+          <div className="divide-y divide-line/50">
+            {memberList.length ? memberList.map(([name, count]) => (
+              <div key={name} className="flex items-center justify-between px-5 py-3 hover:bg-canvas-alt/30">
+                <span className="text-[13px] font-medium truncate">{name}</span>
+                <span className="text-[13px] font-bold text-brand-700 shrink-0">{count} 条</span>
+              </div>
+            )) : <div className="px-5 py-8 text-center text-[13px] text-muted-light">暂无数据</div>}
+          </div>
+        </section>
+
+        <section className="panel overflow-hidden">
+          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5"><h2 className="text-sm font-bold text-ink">平台分布</h2></div>
+          <div className="divide-y divide-line/50">
+            {platformList.length ? platformList.map(([name, v]) => (
+              <div key={name} className="flex items-center justify-between px-5 py-3 hover:bg-canvas-alt/30">
+                <PlatformBadge platform={name} />
+                <span className="text-[13px] font-bold text-brand-700">{compactNumber(v)} 播放</span>
+              </div>
+            )) : <div className="px-5 py-8 text-center text-[13px] text-muted-light">暂无数据</div>}
+          </div>
+        </section>
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      {/* Publish metrics table + Top publications */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <section className="panel overflow-hidden">
-          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-            <h2 className="text-sm font-bold text-ink">私信最多的内容</h2>
-          </div>
+          <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5"><h2 className="text-sm font-bold text-ink">最近发布</h2></div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead>
-                <tr className="border-b border-line/50 bg-canvas-alt/40">
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">内容</th>
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">学校</th>
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">平台</th>
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">私信</th>
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">加微信</th>
-                  <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-light">时间</th>
-                </tr>
-              </thead>
+            <table className="w-full min-w-[600px] text-left">
+              <thead><tr className="border-b border-line/50 bg-canvas-alt/40">
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">内容</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">学校</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">平台</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">私信</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">加微信</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase text-muted-light">时间</th>
+              </tr></thead>
               <tbody className="divide-y divide-line/50">
-                {topPrivateMessages.map((item) => (
-                  <tr key={item.id} className="transition-colors hover:bg-canvas-alt/30">
-                    <td className="px-5 py-3 text-[13px] font-medium text-ink">{item.content_records?.content_type ?? "-"}</td>
-                    <td className="px-5 py-3 text-[13px] text-ink-soft">{item.schools?.name ?? "-"}</td>
+                {topPubs.length ? topPubs.map((item) => (
+                  <tr key={item.id} className="hover:bg-canvas-alt/30">
+                    <td className="px-5 py-3 text-[13px] font-medium">{item.content_records?.content_type || "-"}</td>
+                    <td className="px-5 py-3 text-[13px] text-ink-soft">{item.schools?.name || "-"}</td>
                     <td className="px-5 py-3"><PlatformBadge platform={item.platform} /></td>
-                    <td className="px-5 py-3 text-[13px] font-semibold text-ink">{item.private_messages}</td>
-                    <td className="px-5 py-3 text-[13px] text-ink-soft">{item.wechat_adds}</td>
+                    <td className="px-5 py-3 text-[13px] font-semibold">{item.private_messages || 0}</td>
+                    <td className="px-5 py-3 text-[13px]">{item.wechat_adds || 0}</td>
                     <td className="px-5 py-3 text-[12px] text-muted-light">{formatDateTime(item.created_at)}</td>
                   </tr>
-                ))}
+                )) : <tr><td colSpan={6} className="px-5 py-8 text-center text-[13px] text-muted-light">暂无发布记录</td></tr>}
               </tbody>
             </table>
           </div>
         </section>
 
-        <section className="panel overflow-hidden">
-          <div className="flex items-center gap-2.5 border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-              <School size={15} />
-            </div>
-            <h2 className="text-sm font-bold text-ink">学校转化表现</h2>
-          </div>
-          <div className="divide-y divide-line/50">
-            {schoolConversionRows.length ? (
-              schoolConversionRows.map((row) => (
-                <div key={row.schoolName} className="px-5 py-4 transition-colors hover:bg-canvas-alt/30">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-semibold text-ink">{row.schoolName}</p>
-                    <span className="badge bg-brand-50 text-brand-700">{row.conversions} 成交</span>
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-3 text-[12px] text-muted-light">
-                    <span>私信 {row.privateMessages}</span>
-                    <span>加微信 {row.wechatAdds}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="px-5 py-10 text-center text-[13px] text-muted-light">暂无发布回填数据。</div>
-            )}
-          </div>
-        </section>
       </div>
+
       <MetricsPanel schools={schools ?? []} />
     </>
-  );
-}
-
-function groupBy<T>(rows: T[], getter: (row: T) => string) {
-  return rows.reduce<Record<string, T[]>>((acc, row) => {
-    const key = getter(row);
-    acc[key] = acc[key] ?? [];
-    acc[key].push(row);
-    return acc;
-  }, {});
-}
-
-function RankingPanel({
-  title,
-  children
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="panel overflow-hidden">
-      <div className="border-b border-line/50 bg-canvas-alt/30 px-5 py-3.5">
-        <h2 className="text-sm font-bold text-ink">{title}</h2>
-      </div>
-      <div className="divide-y divide-line/50">
-        {children || <div className="px-5 py-10 text-center text-[13px] text-muted-light">暂无数据。</div>}
-      </div>
-    </section>
-  );
-}
-
-function MetricRow({
-  label,
-  value
-}: {
-  label: React.ReactNode;
-  value: string | number;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-canvas-alt/40">
-      <div className="min-w-0 truncate text-[13px] font-medium text-ink-soft">{label}</div>
-      <div className="shrink-0 text-[13px] font-bold text-brand-700">{value}</div>
-    </div>
   );
 }
