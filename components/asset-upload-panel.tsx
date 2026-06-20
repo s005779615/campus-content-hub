@@ -36,12 +36,19 @@ function getVideoDuration(file: File) {
   return new Promise<number | null>((resolve) => {
     const video = document.createElement("video");
     const objectUrl = URL.createObjectURL(file);
+    // Timeout: 15s 内没读到 metadata 就放弃
+    const timer = setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    }, 15000);
     video.preload = "metadata";
     video.onloadedmetadata = () => {
+      clearTimeout(timer);
       URL.revokeObjectURL(objectUrl);
       resolve(Number.isFinite(video.duration) ? Math.round(video.duration) : null);
     };
     video.onerror = () => {
+      clearTimeout(timer);
       URL.revokeObjectURL(objectUrl);
       resolve(null);
     };
@@ -99,7 +106,7 @@ export function AssetUploadPanel({
       }
       accepted.push({
         file,
-        durationSeconds: await getVideoDuration(file)
+        durationSeconds: null
       });
     }
 
@@ -108,6 +115,11 @@ export function AssetUploadPanel({
       setMessage(`已忽略不支持或超过 200MB 的文件：${rejected.join("、")}`);
       setMessageType("error");
     }
+    // 异步获取视频时长（不阻塞文件列表显示）
+    const withDurations = await Promise.all(
+      accepted.map(async (item) => ({ ...item, durationSeconds: await getVideoDuration(item.file) }))
+    );
+    setFiles(withDurations);
   }
 
   function toggleUsage(item: string) {
@@ -162,7 +174,9 @@ export function AssetUploadPanel({
           throw new Error(`获取上传地址失败(${urlResponse.status})：${urlData.error || "未知错误"}`);
         }
 
-        // Step 2: Upload to storage
+        // Step 2: Upload to storage (large videos may take time)
+        const isVideo = mimeType.startsWith("video/");
+        if (isVideo) setProgress(`正在上传视频 ${index + 1}/${files.length}：${item.file.name}（${(item.file.size / 1024 / 1024).toFixed(1)}MB，请耐心等待...）`);
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("campus-assets")
           .uploadToSignedUrl(urlData.path, urlData.token, item.file, {
