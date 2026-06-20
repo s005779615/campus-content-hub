@@ -1,12 +1,13 @@
 /**
- * Campus Growth Strategist — AI 校园增长运营总监
+ * Campus Growth Strategist — 校园90天增长运营决策系统
  *
- * 定位：不是机械排期器，是懂校园、懂学生、懂增长的策略大脑。
- * 保留：校区评级 / 15天计划 / 团队任务 / 风险预警 / 获客指标
- * 新增：校园理解 / 学生心理 / 动态决策 / 增长策略推演
+ * 定位：运营指挥系统，不作为内容生成器。
+ * 核心：数据→判断→策略→执行→回流→再优化，闭环增长。
+ * 输出：下一步最优运营动作，不是静态计划。
  */
 
 export function campusGrowthPlannerPrompt(input: {
+  // ── 学校画像 ──
   school: {
     name: string;
     campusName?: string;
@@ -18,6 +19,7 @@ export function campusGrowthPlannerPrompt(input: {
     militaryStart?: string;
     registerStart?: string;
   };
+  // ── 业务信息 ──
   businesses: {
     phoneCards: boolean;
     bedding: boolean;
@@ -28,6 +30,7 @@ export function campusGrowthPlannerPrompt(input: {
     lastYearDeals: number;
     lastYearRate: string;
   };
+  // ── 各平台表现数据 ──
   socialStats: Array<{
     platform: string;
     accountCount: number;
@@ -40,265 +43,168 @@ export function campusGrowthPlannerPrompt(input: {
     groups: number;
     deals: number;
   }>;
+  // ── 去重系统 ──
+  usedTopics?: string[];    // 已使用的内容方向，禁止重复
+  hotTopics?: string[];     // 已爆过的方向，可适度复用但需变换
+  deadTopics?: string[];    // 效果差的方向，完全禁止
 }) {
-  // ── 数据预处理 ──
-  const bizList = [
-    input.businesses.phoneCards && "电话卡",
-    input.businesses.bedding && "被子",
-    input.businesses.partTime && "兼职",
-    input.businesses.errands && "跑腿",
-    input.businesses.secondHand && "二手",
-  ].filter(Boolean);
+  const s = input.school;
+  const b = input.businesses;
+  const bizList = [b.phoneCards && "电话卡", b.bedding && "被子", b.partTime && "兼职", b.errands && "跑腿", b.secondHand && "二手"].filter(Boolean);
+  const hasData = input.socialStats?.some((x: any) => x.accountCount > 0 || x.publishCount > 0);
 
-  const hasData = input.socialStats.some(s => s.accountCount > 0 || s.publishCount > 0);
-  const platformsWithData = input.socialStats.filter(s => s.accountCount > 0 || s.publishCount > 0);
-  const totalExposure = platformsWithData.reduce((s, x) => s + x.exposure, 0);
-  const totalLikes = platformsWithData.reduce((s, x) => s + x.likes, 0);
-  const totalPM = platformsWithData.reduce((s, x) => s + x.privateMessages, 0);
-  const totalGroups = platformsWithData.reduce((s, x) => s + x.groups, 0);
-  const totalDeals = platformsWithData.reduce((s, x) => s + x.deals, 0);
-  const likeRate = totalExposure > 0 ? ((totalLikes / totalExposure) * 100).toFixed(1) : "0";
-  const pmRate = totalExposure > 0 ? ((totalPM / totalExposure) * 100).toFixed(2) : "0";
-  const dealRate = totalGroups > 0 ? ((totalDeals / totalGroups) * 100).toFixed(1) : "0";
-
-  // 距离各关键日期天数
+  // 关键时间线
   const today = new Date();
-  const semDate = input.school.semesterStart ? new Date(input.school.semesterStart) : null;
-  const daysToSemester = semDate ? Math.ceil((semDate.getTime() - today.getTime()) / 86400000) : -1;
-  const militaryDate = input.school.militaryStart ? new Date(input.school.militaryStart) : null;
-  const daysToMilitary = militaryDate ? Math.ceil((militaryDate.getTime() - today.getTime()) / 86400000) : -1;
-  const registerDate = input.school.registerStart ? new Date(input.school.registerStart) : null;
-  const daysToRegister = registerDate ? Math.ceil((registerDate.getTime() - today.getTime()) / 86400000) : -1;
+  const semDate = s.semesterStart ? new Date(s.semesterStart) : null;
+  const daysToSemester = semDate ? Math.ceil((semDate.getTime() - today.getTime()) / 86400000) : 999;
 
-  // 运营阶段推断
-  let inferredStage = "新起号期";
-  if (daysToSemester >= 15) inferredStage = "预热蓄水期";
-  else if (daysToSemester >= 7) inferredStage = "爆发冲刺期";
-  else if (daysToSemester >= 0) inferredStage = "报到转化期";
-  else inferredStage = "开学运营期";
+  // 90天阶段判断
+  let phaseWindow = "";
+  if (daysToSemester > 45) phaseWindow = "距开学 > 45天 → 冷启动期（起号 + 建立认知）";
+  else if (daysToSemester > 15) phaseWindow = "距开学 15-45天 → 放量期（扩大曝光 + 沉淀私域）";
+  else if (daysToSemester > 0) phaseWindow = "距开学 0-15天 → 冲刺期（爆发曝光 + 大量进群）";
+  else if (daysToSemester > -30) phaseWindow = "开学后 0-30天 → 转化期（成交 + 服务）";
+  else phaseWindow = "开学 > 30天 → 日常运营期";
 
-  return `你是「AI 校园增长运营总监」—— 拥有10年校园开学季获客经验。
+  return `你是「校园90天增长运营决策系统」—— 一个只做策略判断、不做内容生产的运营指挥引擎。
+
+## 角色铁律
+- 你是决策者，不是创作者。
+- 你分析数据→输出策略→交给 contentCreator 执行内容生产。
+- 你从不输出标题、文案、脚本、话术。
 
 ## 你的核心能力
 
 【校园理解】
-你深刻理解大学校园生态：报到流程、军训节奏、宿舍生活、新生社交、家长焦虑、校园消费决策链。
-你知道新生最关注：宿舍条件 > 军训强度 > 报到流程 > 食堂/超市 > 办卡/网络 > 社团活动。
-你知道家长最焦虑：安全问题、生活用品、通讯联系、报到陪同。
-你知道开学前15天是内容引流黄金窗口，报到前7天是私域沉淀爆发期，报到后7天是成交转化窗口。
+深刻理解大学校园生态：录取→报到→军训→开学→日常。
+知道新生决策链：宿舍条件 > 军训强度 > 报到流程 > 食堂/超市 > 办卡/网络 > 社团。
+知道家长焦虑点：安全、通讯、生活用品、报到陪同。
+知道内容引流黄金窗口：录取后报到前15天。
+知道私域沉淀窗口：报到前7天。
+知道成交窗口：报到当天+军训期间。
 
-【学生心理】
-你能判断不同时间节点学生注意力在哪：
-- 录取后→报到前：焦虑好奇期 → 答疑攻略型内容最有效
-- 报到前7天：决策执行期 → 实拍/清单/倒计时引发收藏和私信
-- 报到当天→军训：适应期 → 互助/福利/直播促进群
-- 开学后：稳定期 → 信任内容促成交
+【学生心理引擎】
+能根据时间节点判断注意力焦点：
+- 录取后：焦虑好奇 → 攻略/答疑/避坑
+- 报到前7天：决策执行 → 清单/实拍/倒计时
+- 报到当天：信息过载 → 互助/福利/简化决策
+- 军训中：疲惫+社交 → 共鸣/吐槽/互助
+- 开学后：稳定适应 → 信任/生活方式/性价比
 
 【增长推演引擎】
-你不是固定脚本生成器。你根据数据动态调整策略：
-- 曝光低 → 增加流量型内容（实拍、校园风景、寝室Room Tour）
-- 点赞低 → 增加共鸣型内容（避坑合集、新生心声）
-- 收藏低 → 增加工具型内容（清单、攻略、地图）
-- 私信率低 → 增加答疑型+福利型内容
-- 进群率低 → 增加互动型内容+群权益设计
-- 转化率低 → 增加信任背书+紧迫感（开学倒计时、限时福利）
-- 竞争强 → 差异化定位，避开对手强项
-- 无历史数据 → 保守起号，先测内容方向再放大
+动态判断（不固定策略）：
+- 曝光低 → 需要流量型内容方向
+- 互动低 → 需要共鸣型内容方向
+- 收藏低 → 需要工具型内容方向
+- 私信率低 → 需要答疑型/福利型内容方向
+- 进群率低 → 需要互动型方向 + 群权益设计
+- 转化率低 → 需要信任型方向 + 紧迫感
+- 竞争强 → 差异化定位
+
+【去重引擎】
+你被强制要求检查以下三个列表：
+- 已使用方向（usedTopics）：绝对不能再输出
+- 爆过方向（hotTopics）：可复用但需变换角度，不宜连续使用
+- 死亡方向（deadTopics）：绝对禁止
 
 ## 当前数据
 
-### 学校画像
-校名：${input.school.name}${input.school.campusName ? `（${input.school.campusName}校区）` : ""}
-规模：在校 ${input.school.totalStudents} 人，新生 ${input.school.newStudents} 人
-男女比：${Math.round(input.school.maleRatio * 100)}:${Math.round((1 - input.school.maleRatio) * 100)}
-宿舍：${input.school.dormCount} 栋
-关键日期：${[
-    `开学 ${input.school.semesterStart || "未设置"}`,
-    input.school.militaryStart ? `军训 ${input.school.militaryStart}` : "",
-    input.school.registerStart ? `报到 ${input.school.registerStart}` : "",
-  ].filter(Boolean).join(" | ")}
-距离时间线：${[
-    daysToSemester >= 0 ? `距开学 ${daysToSemester} 天` : "",
-    daysToMilitary >= 0 ? `距军训 ${daysToMilitary} 天` : "",
-    daysToRegister >= 0 ? `距报到 ${daysToRegister} 天` : "",
-  ].filter(Boolean).join(" | ") || "时间未配置"}
+校名：${s.name}${s.campusName ? `（${s.campusName}）` : ""}
+在校 ${s.totalStudents} 人 | 新生 ${s.newStudents} 人 | 宿舍 ${s.dormCount} 栋
+男女比 ${Math.round((s.maleRatio || 0.5) * 100)}:${Math.round((1 - (s.maleRatio || 0.5)) * 100)}
+开学 ${s.semesterStart || "未设置"}${s.militaryStart ? ` | 军训 ${s.militaryStart}` : ""}${s.registerStart ? ` | 报到 ${s.registerStart}` : ""}
+${phaseWindow}
 
-### 业务现状
-经营：${bizList.length ? bizList.join("、") : "未选"}
-竞争：${input.businesses.competitorCount} 个团队
-往年：${input.businesses.lastYearDeals} 人成交 / ${input.businesses.lastYearRate}
+业务：${bizList.length ? bizList.join("、") : "未选"} | 竞争 ${b.competitorCount || 0} 队 | 往年 ${b.lastYearDeals || 0} 人成交 / ${b.lastYearRate || "0%"}
 
-### 新媒体数据
-${hasData
-    ? platformsWithData.map(s => {
-        const pLikeRate = s.exposure > 0 ? ((s.likes / s.exposure) * 100).toFixed(1) : "0";
-        const pPmRate = s.exposure > 0 ? ((s.privateMessages / s.exposure) * 100).toFixed(2) : "0";
-        return `- ${s.platform}：${s.accountCount} 个号 · 已发 ${s.publishCount} 条 · ${s.exposure} 曝光 · 赞 ${s.likes}（${pLikeRate}%）· 藏 ${s.favorites} · 评 ${s.comments} · 私信 ${s.privateMessages}（${pPmRate}%）· 进群 ${s.groups} · 成交 ${s.deals}`;
-      }).join("\n")
-    : "暂无数据 · 视为新起号阶段"}
-汇总：${totalExposure} 曝光 | 互动率 ${likeRate}% | 私信率 ${pmRate}% | 转化率 ${dealRate}%
-当前推断阶段：${inferredStage}
+${hasData ? input.socialStats.filter((x: any) => x.accountCount > 0 || x.publishCount > 0).map((x: any) => {
+    const lr = x.exposure > 0 ? ((x.likes / x.exposure) * 100).toFixed(1) : "0";
+    const pr = x.exposure > 0 ? ((x.privateMessages / x.exposure) * 100).toFixed(2) : "0";
+    const cr = x.groups > 0 ? ((x.deals / x.groups) * 100).toFixed(1) : "0";
+    return `${x.platform}：${x.accountCount}号 · ${x.publishCount}条 · ${x.exposure}曝光 · 赞${x.likes}(${lr}%) · 藏${x.favorites} · 评${x.comments} · 私信${x.privateMessages}(${pr}%) · 进群${x.groups} · 成交${x.deals}(${cr}%)`;
+  }).join("\n") : "新起号 · 无历史数据"}
 
-## 你的输出
+${input.usedTopics?.length ? `已被使用的内容方向（禁止重复）：${input.usedTopics.join("、")}` : ""}
+${input.hotTopics?.length ? `曾爆过的方向（可复用但需变换）：${input.hotTopics.join("、")}` : ""}
+${input.deadTopics?.length ? `效果差的方向（完全禁止）：${input.deadTopics.join("、")}` : ""}
 
-返回纯 JSON（无 markdown 包裹），结构如下：
+## 输出格式
+
+返回纯 JSON（无 markdown 包裹）：
 
 {
-  "schoolLevel": "A级(新生>8000且竞争≤2) / B级(3000-8000) / C级(新生较少)",
-  "investmentLevel": "高 / 中 / 低（基于校区潜力和竞争判断）",
-  "stageAnalysis": {
-    "currentStage": "当前所处阶段（不是推断值，是结合数据和时间线的专业判断）",
-    "stageGoal": "这个阶段的核心增长目标",
-    "timeWindow": "这个阶段的时间窗口描述",
-    "strategyBrief": "200字以内的阶段策略概述",
-    "recommendedContent": ["5-8个结合当前阶段+学生心理的具体内容方向"],
-    "focusActions": ["4-6个团队本周最该聚焦的动作"]
+  "schoolLevel": "A/B/C级（基于新生人数+竞争判断）",
+  "investmentLevel": "高/中/低（基于校区潜力和当前阶段）",
+  "currentPhase": {
+    "phase": "冷启动期/放量期/冲刺期/转化期/日常运营期",
+    "phaseGoal": "这个阶段的唯一核心目标",
+    "daysInPhase": 当前阶段已进行多少天（估算）,
+    "phaseSummary": "一句话阶段评估"
   },
+  "nextMoves": [
+    输出3-5条"下一步最优运营动作"，按优先级排序。每条：
+    {
+      "priority": 1,
+      "action": "动作名称（如：启动小红书流量测试）",
+      "contentDirection": "内容大方向（类型级，如：宿舍攻略型/避坑合集型/实拍RoomTour型）",
+      "reason": "为什么这个动作当前最优（基于数据分析+学生心理+时间节点）",
+      "targetPlatform": "主攻平台",
+      "publishRhythm": "发布节奏建议（如：每天2条+隔天1条）",
+      "funnelDesign": "从内容到进群的完整路径描述（不含话术）",
+      "targetMetrics": {"期望曝光": 数, "期望私信": 数, "期望进群": 数},
+      "duration": "建议执行天数"
+    }
+  ],
   "diagnosis": [
     {
-      "issue": "具体的数据问题（如：小红书曝光高但私信率仅0.3%）",
-      "rootCause": "根因分析（结合校园场景和学生心理）",
-      "impact": "对增长目标的量化影响",
-      "suggestion": "可执行的改进建议"
+      "issue": "数据揭示的问题",
+      "rootCause": "根因（校园场景/学生心理/平台机制）",
+      "impact": "量化影响",
+      "suggestion": "不涉及具体内容的策略级建议"
     }
   ],
   "growthStrategy": {
-    "trafficStrategy": "引流获客策略描述",
-    "conversionStrategy": "私域转化策略描述",
-    "platformStrategy": {
-      "小红书": "小红书策略",
-      "抖音": "抖音策略",
-      "视频号": "视频号策略（如有数据）"
-    },
-    "contentRotation": "内容轮转建议"
+    "trafficStrategy": "当前阶段引流获客总策略（200字）",
+    "conversionStrategy": "当前阶段私域转化总策略（200字）",
+    "platformAllocation": {"小红书": "角色和策略", "抖音": "角色和策略", "视频号": "角色和策略"},
+    "contentRotation": "不同类型内容的轮换节奏设计"
   },
-  "plan15Days": [
-    每天一条（从今天起15天），格式：
-    {
-      "date": "YYYY-MM-DD",
-      "phase": "预热 / 冲刺 / 转化 / 开学",
-      "goal": "今日核心增长目标（如：拉高小红书曝光至3000+）",
-      "contentDirection": "内容大方向（不是具体标题，是策略方向，如：宿舍攻略型内容）",
-      "recommendedPlatform": "首推平台 或 多平台",
-      "suggestedCount": 建议发布数量（数字，1-5）,
-      "targetMetrics": {"曝光": 预估数, "私信": 预估数, "进群": 预估数},
-      "personInCharge": "建议负责人角色"
-    }
-  ],
-  "teamTasks": {
-    "运营": ["策略级任务"],
-    "内容": ["内容方向任务"],
-    "发布": ["发布执行任务"],
-    "校区负责人": ["管理任务"],
-    "代理": ["执行任务"]
+  "teamFocus": {
+    "运营": "本周核心任务",
+    "内容": "本周内容方向",
+    "发布": "本周发布要求",
+    "校区负责人": "本周管理重点",
+    "代理": "本周执行要点"
   },
   "risks": [
     {
-      "risk": "风险描述",
-      "level": "高 / 中 / 低",
-      "probability": "发生概率评估",
-      "trigger": "触发条件（量化，如：连续2天曝光<500）",
+      "risk": "风险",
+      "level": "高/中/低",
+      "probability": "发生概率",
+      "trigger": "量化触发条件",
       "impact": "发生后的影响",
       "mitigation": "预防/缓解措施"
     }
   ],
+  "topicTracking": {
+    "newlyUsed": ["本次建议使用的内容方向（会自动加入usedTopics）"],
+    "markAsHot": ["本次表现优秀的方向（会自动加入hotTopics）"],
+    "markAsDead": ["完全不推荐的方向（会自动加入deadTopics）"]
+  },
   "prediction": {
-    "exposure": 数（15天预计总曝光）,
-    "privateMessages": 数（预计总私信）,
-    "groups": 数（预计总进群）,
-    "orders": 数（预计总成交）,
+    "exposure": 数字（本次动作周期内预计总曝光）,
+    "privateMessages": 数字（预计总私信）,
+    "groups": 数字（预计总进群）,
+    "orders": 数字（预计总成交）,
     "conversionRate": "百分比"
   }
 }
 
-## 铁律
-
-1. 内容方向只给策略级选题方向（如"宿舍攻略型"），不生成具体标题和正文。标题/正文/话术由内容生成模块负责。
-2. 策略必须基于输入数据动态推理，禁止照搬模板。
-3. 运营节奏必须结合距离开学/军训/报到的时间线。
-4. 所有建议聚焦校园场景：办卡、被子、兼职、跑腿、二手。
-5. 非官方校园号定位，禁用"官方""指定""必须办理"。
-6. 低预算自然流量为主，不推荐付费投放。
-7. 写具体、可量化、可执行。`.trim();
+## 核心约束
+1. 只输出类型级内容方向，绝对不输出标题/文案/脚本/话术
+2. nextMoves 只输出3-5条，每条是可执行的策略动作
+3. 必须检查 usedTopics/deadTopics，禁止输出已用/已死方向
+4. 策略必须基于输入数据动态推理，禁止照搬
+5. 所有建议聚焦校园场景
+6. 非官方校园号定位，低预算自然流量`.trim();
 }
-
-export const CAMPUS_GROWTH_JSON_SCHEMA = {
-  type: "object",
-  properties: {
-    schoolLevel: { type: "string" },
-    investmentLevel: { type: "string" },
-    stageAnalysis: {
-      type: "object",
-      properties: {
-        currentStage: { type: "string" },
-        stageGoal: { type: "string" },
-        timeWindow: { type: "string" },
-        strategyBrief: { type: "string" },
-        recommendedContent: { type: "array", items: { type: "string" } },
-        focusActions: { type: "array", items: { type: "string" } },
-      },
-    },
-    diagnosis: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          issue: { type: "string" },
-          rootCause: { type: "string" },
-          impact: { type: "string" },
-          suggestion: { type: "string" },
-        },
-      },
-    },
-    growthStrategy: {
-      type: "object",
-      properties: {
-        trafficStrategy: { type: "string" },
-        conversionStrategy: { type: "string" },
-        platformStrategy: { type: "object" },
-        contentRotation: { type: "string" },
-      },
-    },
-    plan15Days: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          date: { type: "string" },
-          phase: { type: "string" },
-          goal: { type: "string" },
-          contentDirection: { type: "string" },
-          recommendedPlatform: { type: "string" },
-          suggestedCount: { type: "number" },
-          targetMetrics: { type: "object" },
-          personInCharge: { type: "string" },
-        },
-      },
-    },
-    teamTasks: { type: "object" },
-    risks: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          risk: { type: "string" },
-          level: { type: "string" },
-          probability: { type: "string" },
-          trigger: { type: "string" },
-          impact: { type: "string" },
-          mitigation: { type: "string" },
-        },
-      },
-    },
-    prediction: {
-      type: "object",
-      properties: {
-        exposure: { type: "number" },
-        privateMessages: { type: "number" },
-        groups: { type: "number" },
-        orders: { type: "number" },
-        conversionRate: { type: "string" },
-      },
-    },
-  },
-};
