@@ -73,11 +73,9 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const { error } = await ctx.supabase
-    .from("publish_metrics")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", ctx.profile.id);
+  let query = ctx.supabase.from("publish_metrics").delete().eq("id", id);
+  if (ctx.profile.role !== "admin") query = query.eq("user_id", ctx.profile.id);
+  const { error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
