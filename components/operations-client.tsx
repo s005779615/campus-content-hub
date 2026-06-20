@@ -134,19 +134,41 @@ export function OperationsClient({
       const [cfg, promptData] = await Promise.all([cfgRes.json(), promptRes.json()]);
       if (!cfg.ok || !promptData.prompt) { setMessage("配置获取失败"); setLoading(false); return; }
 
-      // Step 2: Call DeepSeek directly from browser — no Vercel timeout
-      setMessage("AI 正在决策（浏览器直连，可耗时 1-2 分钟）...");
-      const aiRes = await fetch(`${cfg.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      // Step 2: Call AI via Vercel proxy (streaming SSE → 30s window)
+      setMessage("AI 分析中...");
+      const proxyRes = await fetch("/api/operations/proxy", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify({ model: cfg.model, messages: [{ role: "user", content: promptData.prompt }], temperature: 0.7, max_tokens: 4096 }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl, model: cfg.model, prompt: promptData.prompt, schoolId: selectedSchoolId }),
         signal: controller.signal,
       });
-      if (!aiRes.ok) { setMessage(`AI 返回 ${aiRes.status}`); setLoading(false); return; }
+      if (!proxyRes.ok || !proxyRes.body) { setMessage(`代理错误 ${proxyRes.status}`); setLoading(false); return; }
 
-      setMessage("AI 返回完成，解析中...");
-      const data = await aiRes.json();
-      const text = (data?.choices?.[0]?.message?.content || "").trim();
+      // Read SSE stream
+      const reader = proxyRes.body.getReader();
+      const decoder2 = new TextDecoder();
+      let buf2 = "";
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf2 += decoder2.decode(value, { stream: true });
+        const lines = buf2.split("\n");
+        buf2 = lines.pop() || "";
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const evt = JSON.parse(line.slice(6));
+              if (evt.t === "chunk") { text += (evt.c || ""); if (text.length % 200 < 20) setMessage(`已接收 ${text.length} 字符`); }
+              else if (evt.t === "done") { text = evt.content || text; }
+              else if (evt.t === "error") { setMessage(evt.msg || "中断"); setLoading(false); return; }
+            } catch { /* skip */ }
+          }
+        }
+      }
+      if (!text) { setMessage("AI 返回为空"); setLoading(false); return; }
+
+      setMessage("解析中...");
       const jsonStr = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
       let parsed: any;
       try { parsed = JSON.parse(jsonStr); } catch {
