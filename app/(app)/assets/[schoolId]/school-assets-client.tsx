@@ -371,6 +371,7 @@ function AssetCard({
               alt={asset.file_name}
               className="h-full w-full object-cover"
               loading="lazy"
+              decoding="async"
               src={asset.signed_url}
             />
           )
@@ -390,6 +391,31 @@ function AssetCard({
             <Play size={10} fill="currentColor" />
             {formatAssetDuration(asset.duration_seconds)}
           </span>
+        ) : null}
+        {/* Quick download button — always visible on hover/tap */}
+        {asset.signed_url ? (
+          <button
+            className="absolute bottom-3 left-3 rounded bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-ink shadow backdrop-blur hover:bg-white"
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                const res = await fetch(asset.signed_url!);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = asset.file_name || "素材";
+                a.click();
+                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+              } catch { /* download failed */ }
+            }}
+            type="button"
+            title="保存到本地"
+          >
+            ↓ 下载
+          </button>
         ) : null}
       </div>
       <div className="p-4">
