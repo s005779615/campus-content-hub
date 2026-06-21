@@ -55,14 +55,14 @@ export function campusGrowthPlannerPrompt(input: {
   // 距离开学天数
   const today = new Date();
   const semDate = s.semesterStart ? new Date(s.semesterStart) : null;
-  const daysToSemester = semDate ? Math.ceil((semDate.getTime() - today.getTime()) / 86400000) : 999;
+  const daysToSemester = semDate ? Math.ceil((semDate.getTime() - today.getTime()) / 86400000) : null;
 
   return `你是校园账号运营诊断专家。只分析数据找问题给方向，不输出内容/文案/脚本/排期。
 
 ## 输入数据
 
 校名：${s.name}${s.campusName ? `（${s.campusName}）` : ""}
-新生 ${s.newStudents} / 总 ${s.totalStudents} | 开学${s.semesterStart || "?"} | 距开学${daysToSemester}天
+新生 ${s.newStudents} / 总 ${s.totalStudents}${semDate ? ` | 开学${s.semesterStart} | 距开学${daysToSemester}天` : " | 开学时间：未设置（请补充）"}
 业务：${bizList.length ? bizList.join("、") : "未选"} | 竞争${b.competitorCount || 0}队
 
 ${hasData ? `平台数据：\n${platformStats}` : "暂无平台数据"}

@@ -53,6 +53,7 @@ export function OperationsClient({
 
   async function runDiagnosis() {
     if (!selectedSchoolId || !selectedSchool) return;
+    if (!semesterStart) { setMessage("请先设置开学日期"); return; }
     setLoading(true); setMessage("正在获取数据..."); setDiagnosis(null);
     const controller = new AbortController(); abortRef.current = controller;
 
