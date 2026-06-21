@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ExternalLink,
   Loader2,
+  Trash2,
   Upload
 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
@@ -138,6 +139,19 @@ export function TasksClient({
     );
     setMessage("任务状态已更新。");
     router.refresh();
+  }
+
+  async function deleteTask(task: TaskRecord) {
+    if (!confirm(`确定删除任务「${task.content_type || "内容任务"}」？此操作不可撤销。`)) return;
+    setMessage("");
+    const res = await fetch(`/api/tasks?id=${task.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setLocalTasks(current => current.filter(t => t.id !== task.id));
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage(d.error || "删除失败");
+    }
   }
 
   async function uploadScreenshot(task: TaskRecord, file: File) {
@@ -276,7 +290,12 @@ export function TasksClient({
                   {task.schools?.name || "未指定学校"} · {task.platform_accounts?.account_name || "未指定账号"}
                 </p>
               </div>
-              <time className="shrink-0 text-sm font-medium text-muted">{formatDate(task.task_date)}</time>
+              <div className="flex items-center gap-2 shrink-0">
+                <button className="button-ghost p-1 text-muted-light hover:text-coral-600" onClick={() => deleteTask(task)} type="button" title="删除任务">
+                  <Trash2 size={15} />
+                </button>
+                <time className="text-sm font-medium text-muted">{formatDate(task.task_date)}</time>
+              </div>
             </div>
 
             {role === "admin" ? (
