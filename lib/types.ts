@@ -151,6 +151,10 @@ export type PlatformAccount = {
   daily_publish_target: number;
   status: AccountStatus;
   notes: string | null;
+  positioning_profile?: Record<string, unknown>;
+  positioning_status?: "未确认" | "已生成" | "已确认";
+  positioning_generated_at?: string | null;
+  positioning_confirmed_at?: string | null;
   created_at: string;
   schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
   profiles?: Pick<Profile, "full_name" | "email" | "role"> | null;

@@ -15,7 +15,9 @@ export default async function OperationsPage() {
       .limit(30),
     supabase
       .from("platform_accounts")
-      .select("id, school_id, user_id, platform, account_name")
+      .select(
+        "id, school_id, user_id, platform, account_name, account_id, account_link, account_positioning, daily_publish_target, status, positioning_profile, positioning_status, positioning_generated_at, positioning_confirmed_at, schools(name,campus_name,city), profiles!user_id(full_name,email,role)"
+      )
       .eq("status", "启用")
       .order("account_name")
       .returns<PlatformAccount[]>(),
@@ -25,7 +27,7 @@ export default async function OperationsPage() {
     <>
       <PageHeader
         title="账号运营"
-        description="校区数据录入 → AI 诊断评级 → 15 天运营计划 → 团队任务分配"
+        description="账号定位 → 数据诊断 → 7天运营策略 → 内容与任务"
       />
       <OperationsClient
         profile={profile}
