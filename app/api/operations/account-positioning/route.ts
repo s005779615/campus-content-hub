@@ -30,6 +30,22 @@ const accountSelect = `
   positioning_confirmed_at,schools(*),profiles!user_id(full_name,email,role)
 `;
 
+function activeAccountQuery(query: any) {
+  return query
+    .is("deleted_at", null)
+    .not("status", "in", "(暂停,异常)");
+}
+
+function logAccountRead(schoolId: string, accounts: Array<{ id: string; platform: string }>) {
+  console.info("operations.account_positioning.read_accounts", {
+    campusId: schoolId,
+    accountCount: accounts.length,
+    douyinCount: accounts.filter((account) => account.platform === "抖音").length,
+    xiaohongshuCount: accounts.filter((account) => account.platform === "小红书").length,
+    accountIds: accounts.map((account) => account.id)
+  });
+}
+
 export async function GET(request: Request) {
   const context = await getAuthContext();
   if (!context) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,11 +54,10 @@ export async function GET(request: Request) {
   const schoolId = searchParams.get("schoolId");
   if (!schoolId) return NextResponse.json({ error: "Missing schoolId" }, { status: 400 });
 
-  const { data, error } = await context.supabase
+  const { data, error } = await activeAccountQuery(context.supabase
     .from("platform_accounts")
     .select(accountSelect)
-    .eq("school_id", schoolId)
-    .eq("status", "启用")
+    .eq("school_id", schoolId))
     .order("platform")
     .order("account_name");
 
@@ -62,17 +77,18 @@ export async function POST(request: Request) {
 
   if (!body.schoolId) return NextResponse.json({ error: "Missing schoolId" }, { status: 400 });
 
-  let query = context.supabase
+  let query = activeAccountQuery(context.supabase
     .from("platform_accounts")
     .select(accountSelect)
-    .eq("school_id", body.schoolId)
-    .eq("status", "启用");
+    .eq("school_id", body.schoolId));
 
   if (body.accountId) query = query.eq("id", body.accountId);
 
   const { data: accounts, error } = await query.order("platform").order("account_name");
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  if (!accounts?.length) return NextResponse.json({ error: "该校区暂无启用账号。" }, { status: 400 });
+  if (!accounts?.length) return NextResponse.json({ error: "该校区暂无可定位账号，请先在校园分配中添加账号，并确保状态不是暂停或异常。" }, { status: 400 });
+
+  logAccountRead(body.schoolId, accounts);
 
   const school = Array.isArray(accounts[0].schools) ? accounts[0].schools[0] : accounts[0].schools;
   const prompt = campusAccountPositionerPrompt({

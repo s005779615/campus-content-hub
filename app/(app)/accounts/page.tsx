@@ -15,7 +15,8 @@ export default async function AccountsPage() {
       .returns<SchoolRecord[]>(),
     supabase
       .from("platform_accounts")
-      .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
+      .select("id,user_id,school_id,platform,account_name,account_id,account_link,account_positioning,daily_publish_target,status,notes,positioning_profile,positioning_status,positioning_generated_at,positioning_confirmed_at,deleted_at,created_at,updated_at,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .returns<PlatformAccount[]>(),
     manager

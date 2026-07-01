@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     .from("platform_accounts")
     .select("id,platform,account_name,user_id,positioning_profile,positioning_status,positioning_confirmed_at,profiles!user_id(full_name,email)")
     .eq("school_id", body.schoolId)
-    .eq("status", "启用")
+    .is("deleted_at", null)
+    .not("status", "in", "(暂停,异常)")
     .eq("positioning_status", "已确认");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

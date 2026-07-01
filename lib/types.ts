@@ -8,8 +8,19 @@ export type TaskStatus =
   | "已回填"
   | "已复盘"
   | "异常";
-export type AccountPositioning = "学长号" | "校园墙" | "校园生活号" | "新生攻略号";
-export type AccountStatus = "启用" | "暂停" | "异常";
+export type AccountPositioning =
+  | "待AI定位"
+  | "新生攻略号"
+  | "校园生活号"
+  | "校园实拍号"
+  | "学长学姐号"
+  | "新生答疑号"
+  | "社群承接号"
+  | "转化承接号"
+  | "其他"
+  | "学长号"
+  | "校园墙";
+export type AccountStatus = "待定位" | "待启动" | "运营中" | "暂停" | "异常";
 export type AssetFileType = "图片" | "视频";
 export type AssetStatus = "待审核" | "已通过" | "已驳回" | "已归档";
 export type AssetCategory =
@@ -145,7 +156,6 @@ export type PlatformAccount = {
   platform: Platform;
   account_name: string;
   account_id: string | null;
-  account_password: string | null;
   account_link: string | null;
   account_positioning: AccountPositioning;
   daily_publish_target: number;
@@ -155,6 +165,7 @@ export type PlatformAccount = {
   positioning_status?: "未确认" | "已生成" | "已确认";
   positioning_generated_at?: string | null;
   positioning_confirmed_at?: string | null;
+  deleted_at?: string | null;
   created_at: string;
   schools?: Pick<SchoolRecord, "name" | "campus_name" | "city"> | null;
   profiles?: Pick<Profile, "full_name" | "email" | "role"> | null;

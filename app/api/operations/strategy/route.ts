@@ -30,7 +30,8 @@ export async function POST(request: Request) {
     .from("platform_accounts")
     .select("id,platform,account_name,user_id,account_positioning,daily_publish_target,positioning_profile,positioning_status,profiles!user_id(full_name,email)")
     .eq("school_id", body.schoolId)
-    .eq("status", "启用")
+    .is("deleted_at", null)
+    .not("status", "in", "(暂停,异常)")
     .eq("positioning_status", "已确认")
     .order("platform")
     .order("account_name");

@@ -74,15 +74,36 @@ create table if not exists public.platform_accounts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   school_id uuid not null references public.schools(id) on delete cascade,
-  platform text not null check (platform in ('抖音', '小红书')),
+  platform text not null check (platform in ('抖音', '小红书', '视频号')),
   account_name text not null,
   account_id text,
-  account_password text,
   account_link text,
+  account_positioning text not null default '待AI定位' check (
+    account_positioning in (
+      '待AI定位',
+      '新生攻略号',
+      '校园生活号',
+      '校园实拍号',
+      '学长学姐号',
+      '新生答疑号',
+      '社群承接号',
+      '转化承接号',
+      '其他',
+      '学长号',
+      '校园墙'
+    )
+  ),
+  daily_publish_target integer not null default 1 check (daily_publish_target > 0),
+  status text not null default '待定位' check (status in ('待定位', '待启动', '运营中', '暂停', '异常')),
+  positioning_profile jsonb not null default '{}'::jsonb,
+  positioning_status text not null default '未确认' check (positioning_status in ('未确认', '已生成', '已确认')),
+  positioning_generated_at timestamptz,
+  positioning_confirmed_at timestamptz,
   notes text,
+  assigned_by uuid references public.profiles(id) on delete set null,
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique(user_id, school_id, platform)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.schools (
@@ -163,6 +184,17 @@ create table if not exists public.publish_tasks (
 );
 
 create index if not exists idx_school_assignments_user on public.school_assignments(user_id);
+create unique index if not exists idx_platform_accounts_platform_account_id_active
+  on public.platform_accounts(platform, account_id)
+  where account_id is not null
+    and btrim(account_id) <> ''
+    and deleted_at is null;
+create index if not exists idx_platform_accounts_active_school_status
+  on public.platform_accounts(school_id, status)
+  where deleted_at is null;
+create index if not exists idx_platform_accounts_active_user
+  on public.platform_accounts(user_id)
+  where deleted_at is null;
 create index if not exists idx_content_records_user on public.content_records(user_id);
 create index if not exists idx_content_records_school on public.content_records(school_id);
 create index if not exists idx_publication_records_user on public.publication_records(user_id);

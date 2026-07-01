@@ -69,7 +69,8 @@ export async function POST(request: Request) {
       .from("platform_accounts")
       .select("id,user_id,school_id,platform")
       .eq("id", body.platformAccountId)
-      .eq("status", "启用")
+      .is("deleted_at", null)
+      .not("status", "in", "(暂停,异常)")
       .single();
 
     if (accountError || !account || !(platforms as readonly string[]).includes(account.platform)) {

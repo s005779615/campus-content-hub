@@ -34,7 +34,8 @@ export async function POST(request: Request) {
     .select("id,user_id,school_id,platform,account_name,account_positioning")
     .in("id", accountIds)
     .eq("school_id", body.schoolId)
-    .eq("status", "启用");
+    .is("deleted_at", null)
+    .not("status", "in", "(暂停,异常)");
 
   if (accountError) return NextResponse.json({ error: accountError.message }, { status: 400 });
   const accountMap = new Map((accounts ?? []).map((account) => [account.id, account]));

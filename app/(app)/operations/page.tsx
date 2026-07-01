@@ -18,7 +18,8 @@ export default async function OperationsPage() {
       .select(
         "id, school_id, user_id, platform, account_name, account_id, account_link, account_positioning, daily_publish_target, status, positioning_profile, positioning_status, positioning_generated_at, positioning_confirmed_at, schools(name,campus_name,city), profiles!user_id(full_name,email,role)"
       )
-      .eq("status", "启用")
+      .is("deleted_at", null)
+      .not("status", "in", "(暂停,异常)")
       .order("account_name")
       .returns<PlatformAccount[]>(),
   ]);

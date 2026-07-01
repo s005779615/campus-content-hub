@@ -44,10 +44,23 @@ export const taskStatuses = [
 ] as const;
 
 export const accountPositionings = [
-  "学长号",
-  "校园墙",
+  "待AI定位",
+  "新生攻略号",
   "校园生活号",
-  "新生攻略号"
+  "校园实拍号",
+  "学长学姐号",
+  "新生答疑号",
+  "社群承接号",
+  "转化承接号",
+  "其他"
+] as const;
+
+export const accountStatuses = [
+  "待定位",
+  "待启动",
+  "运营中",
+  "暂停",
+  "异常"
 ] as const;
 
 export const assetCategories = [

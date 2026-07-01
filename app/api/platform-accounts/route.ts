@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthContext, isManager } from "@/lib/auth";
-import { accountPositionings, platforms } from "@/lib/constants";
+import {
+  checkDuplicatePlatformAccount,
+  ensureSchoolAssignment,
+  platformAccountSelect,
+  toAccountRow,
+  validateAccountPayload
+} from "@/lib/account-records";
 import type { AccountStatus } from "@/lib/types";
-
-const accountStatuses: AccountStatus[] = ["启用", "暂停", "异常"];
 
 export async function GET() {
   const context = await getAuthContext();
@@ -14,7 +18,8 @@ export async function GET() {
 
   const { data, error } = await context.supabase
     .from("platform_accounts")
-    .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
+    .select(platformAccountSelect)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -41,7 +46,6 @@ export async function POST(request: Request) {
     platform: string;
     accountName: string;
     accountId?: string;
-    accountPassword?: string;
     accountLink?: string;
     accountPositioning: string;
     dailyPublishTarget: number;
@@ -49,64 +53,32 @@ export async function POST(request: Request) {
     notes?: string;
   };
 
-  if (
-    !body.userId ||
-    !body.schoolId ||
-    !body.accountName ||
-    !(platforms as readonly string[]).includes(body.platform) ||
-    !(accountPositionings as readonly string[]).includes(body.accountPositioning) ||
-    !accountStatuses.includes(body.status) ||
-    Number(body.dailyPublishTarget) < 1
-  ) {
-    return NextResponse.json({ error: "分配信息不完整或格式不正确。" }, { status: 400 });
-  }
+  const payload = {
+    userId: body.userId,
+    schoolId: body.schoolId,
+    platform: body.platform,
+    accountName: body.accountName,
+    platformAccountId: body.accountId,
+    profileUrl: body.accountLink,
+    manualPositioning: body.accountPositioning || "待AI定位",
+    dailyPublishTarget: Number(body.dailyPublishTarget ?? 1),
+    status: body.status,
+    notes: body.notes
+  };
 
-  const { data: targetProfile } = await context.supabase
-    .from("profiles")
-    .select("id,role")
-    .eq("id", body.userId)
-    .single();
+  const validationError = await validateAccountPayload(context, payload);
+  if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
-  if (!targetProfile || !["member", "agent"].includes(targetProfile.role)) {
-    return NextResponse.json({ error: "无权为该成员分配账号。" }, { status: 403 });
-  }
+  const assignmentError = await ensureSchoolAssignment(context, body.userId, body.schoolId);
+  if (assignmentError) return NextResponse.json({ error: assignmentError }, { status: 400 });
 
-  const { error: assignmentError } = await context.supabase
-    .from("school_assignments")
-    .upsert(
-      {
-        user_id: body.userId,
-        school_id: body.schoolId,
-        assigned_by: context.user.id
-      },
-      { onConflict: "user_id,school_id" }
-    );
-
-  if (assignmentError) {
-    return NextResponse.json({ error: assignmentError.message }, { status: 400 });
-  }
+  const duplicateError = await checkDuplicatePlatformAccount(context, body.platform, body.accountId);
+  if (duplicateError) return NextResponse.json({ error: duplicateError }, { status: 409 });
 
   const { data, error } = await context.supabase
     .from("platform_accounts")
-    .upsert(
-      {
-        user_id: body.userId,
-        school_id: body.schoolId,
-        platform: body.platform,
-        account_name: body.accountName,
-        account_id: body.accountId || null,
-        account_password: body.accountPassword || null,
-        account_link: body.accountLink || null,
-        account_positioning: body.accountPositioning,
-        daily_publish_target: Number(body.dailyPublishTarget),
-        status: body.status,
-        notes: body.notes || null,
-        assigned_by: context.user.id,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "user_id,school_id,platform" }
-    )
-    .select("*,schools(name,campus_name,city),profiles!user_id(full_name,email,role)")
+    .insert(toAccountRow(context.user.id, payload))
+    .select(platformAccountSelect)
     .single();
 
   if (error) {

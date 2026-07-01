@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2, Plus, Copy, Check } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PlatformBadge } from "@/components/platform-badge";
 import type { UserRole } from "@/lib/types";
@@ -11,7 +11,6 @@ type Account = {
   platform: string;
   account_name: string;
   account_id?: string;
-  account_password?: string;
   account_link?: string;
   notes?: string;
   user_id: string;
@@ -26,8 +25,6 @@ export function DashboardAccounts({ role, userId }: { role: UserRole; userId: st
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
-  const [copied, setCopied] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/platform-accounts")
@@ -49,7 +46,6 @@ export function DashboardAccounts({ role, userId }: { role: UserRole; userId: st
         platform: String(f.get("platform")),
         accountName: String(f.get("account_name")),
         accountId: String(f.get("account_id") || ""),
-        accountPassword: String(f.get("account_password") || ""),
         accountLink: String(f.get("account_link") || ""),
         notes: String(f.get("notes") || ""),
       }),
@@ -66,12 +62,6 @@ export function DashboardAccounts({ role, userId }: { role: UserRole; userId: st
       const d = await res.json().catch(() => ({}));
       setMessage(d.error ?? "保存失败");
     }
-  }
-
-  async function copyText(text: string, id: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(prev => ({ ...prev, [id]: true }));
-    setTimeout(() => setCopied(prev => ({ ...prev, [id]: false })), 1500);
   }
 
   if (loading) return <div className="panel p-5 text-sm text-muted">加载账号...</div>;
@@ -97,7 +87,6 @@ export function DashboardAccounts({ role, userId }: { role: UserRole; userId: st
           </select>
           <input className="form-input" name="account_name" required placeholder="账号名称" />
           <input className="form-input" name="account_id" placeholder="账号ID（选填）" />
-          <input className="form-input" name="account_password" placeholder="密码（选填）" />
           <input className="form-input" name="account_link" placeholder="链接（选填）" />
           <input className="form-input" name="notes" placeholder="备注（选填）" />
           <div className="sm:col-span-3 flex items-center gap-3">
@@ -120,17 +109,6 @@ export function DashboardAccounts({ role, userId }: { role: UserRole; userId: st
               </div>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-light">
                 {acc.account_id ? <span>ID: {acc.account_id}</span> : null}
-                {acc.account_password ? (
-                  <span>
-                    密码: {showPassword[acc.id] ? acc.account_password : "••••••"}
-                    <button className="ml-1 align-middle" onClick={() => setShowPassword(prev => ({ ...prev, [acc.id]: !prev[acc.id] }))} type="button">
-                      {showPassword[acc.id] ? <EyeOff size={11} /> : <Eye size={11} />}
-                    </button>
-                    <button className="ml-1 text-brand-600 align-middle" onClick={() => copyText(acc.account_password!, acc.id)} type="button">
-                      {copied[acc.id] ? <Check size={11} /> : <Copy size={11} />}
-                    </button>
-                  </span>
-                ) : null}
                 {acc.notes ? <span>{acc.notes}</span> : null}
               </div>
             </div>
