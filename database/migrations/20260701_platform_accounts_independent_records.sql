@@ -16,6 +16,9 @@ update public.platform_accounts
 set account_password = null
 where account_password is not null;
 
+alter table public.platform_accounts
+  drop constraint if exists platform_accounts_status_check;
+
 update public.platform_accounts
 set status = case
   when status = '启用' then '运营中'
@@ -47,9 +50,6 @@ alter table public.platform_accounts
       '校园墙'
     )
   );
-
-alter table public.platform_accounts
-  drop constraint if exists platform_accounts_status_check;
 
 alter table public.platform_accounts
   add constraint platform_accounts_status_check
