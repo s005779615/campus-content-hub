@@ -123,18 +123,26 @@ export function GenerateClient({
     setMessage("");
     setMessageType("info");
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, model: selectedModel })
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, model: selectedModel })
+      });
+    } catch (error) {
+      setLoading(false);
+      setMessage(friendlyGenerateError(error));
+      setMessageType("error");
+      return;
+    }
 
     setLoading(false);
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       const errMsg = typeof data.error === "string" ? data.error : (data.error?.message || data.error?.code || "生成失败，请稍后重试。");
-      setMessage(String(errMsg));
+      setMessage(friendlyGenerateError(errMsg));
       setMessageType("error");
       return;
     }
@@ -477,6 +485,22 @@ export function GenerateClient({
       </section>
     </div>
   );
+}
+
+function friendlyGenerateError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("aborted") ||
+    lower.includes("abort") ||
+    lower.includes("timeout") ||
+    lower.includes("timed out")
+  ) {
+    return "AI 生成超时或被中断。建议少选几个素材，或切换另一个创作引擎再试一次。";
+  }
+
+  return message || "生成失败，请稍后重试。";
 }
 
 function SelectedAssetsPanel({ assets }: { assets: SelectedAssetSummary[] }) {

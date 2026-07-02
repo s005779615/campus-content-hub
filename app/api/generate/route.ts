@@ -10,6 +10,8 @@ import type {
   SelectedAssetSummary
 } from "@/lib/types";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const context = await getAuthContext();
@@ -88,9 +90,30 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ output, riskHits, selectedAssets });
   } catch (error) {
+    const message = normalizeGenerateError(error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { error: message },
+      { status: message.includes("超时") || message.includes("中断") ? 504 : 500 }
     );
   }
+}
+
+function normalizeGenerateError(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error || "");
+  const lower = raw.toLowerCase();
+
+  if (
+    lower.includes("aborted") ||
+    lower.includes("abort") ||
+    lower.includes("timeout") ||
+    lower.includes("timed out")
+  ) {
+    return "AI 生成超时或被中断。系统已保护本次请求，请少选几个素材或切换“深度爆款版/校园灵感版”再试一次。";
+  }
+
+  if (lower.includes("json")) {
+    return "AI 返回格式不稳定，请重新生成一次。";
+  }
+
+  return raw || "生成失败，请稍后重试。";
 }

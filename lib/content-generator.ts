@@ -24,6 +24,7 @@ type ChatCompletionProvider = {
   model: string;
   maxTokensField: "max_tokens" | "max_completion_tokens";
   supportsJsonMode: boolean;
+  requestTimeoutMs: number;
 };
 
 export type FriendlyModelInfo = {
@@ -245,8 +246,9 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
         process.env.DOUBAO_BASE_URL ?? "https://ark.cn-beijing.volces.com/api/v3"
       ),
       model,
-      maxTokensField: "max_completion_tokens",
-      supportsJsonMode: false
+      maxTokensField: "max_tokens",
+      supportsJsonMode: false,
+      requestTimeoutMs: model.toLowerCase().includes("deepseek") ? 38000 : 30000
     };
   }
 
@@ -263,7 +265,8 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
     endpoint: normalizeChatEndpoint(process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"),
     model,
     maxTokensField: "max_tokens",
-    supportsJsonMode: true
+    supportsJsonMode: true,
+    requestTimeoutMs: 35000
   };
 }
 
@@ -284,7 +287,7 @@ async function generateWithChatCompletions(
       { role: "user", content: prompt }
     ]
   };
-  body[provider.maxTokensField] = 2600;
+  body[provider.maxTokensField] = provider.model.toLowerCase().includes("deepseek") ? 2200 : 1800;
 
   if (provider.supportsJsonMode) {
     body.response_format = { type: "json_object" };
@@ -297,12 +300,12 @@ async function generateWithChatCompletions(
   // 降低温度，输出更确定 = 稍快（0.82→0.72）
   body.temperature = 0.72;
 
-  const MAX_RETRIES = 2;
+  const MAX_RETRIES = 1;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s，Vercel Pro 60s 留余量
+    const timeoutId = setTimeout(() => controller.abort(), provider.requestTimeoutMs);
 
     try {
       const response = await fetch(provider.endpoint, {
@@ -349,20 +352,43 @@ async function generateWithChatCompletions(
     } catch (fetchError) {
       clearTimeout(timeoutId);
       const reason = fetchError instanceof Error ? fetchError.message : "unknown";
-      const isTimeout = reason.includes("abort") || reason.includes("timeout") || reason.includes("AbortError");
+      const isTimeout = isTimeoutLike(reason);
 
-      if ((isTimeout || reason.includes("fetch")) && attempt < MAX_RETRIES) {
+      const isNetworkIssue = reason.toLowerCase().includes("fetch");
+
+      if ((isTimeout || isNetworkIssue) && attempt < MAX_RETRIES) {
         lastError = fetchError instanceof Error ? fetchError : new Error(reason);
         if (process.env.NODE_ENV === "development") console.warn(`[AI] 重试 ${attempt + 1}/${MAX_RETRIES}（${reason.slice(0, 40)}）...`);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 900));
         continue;
+      }
+
+      if (isTimeout) {
+        lastError = fetchError instanceof Error ? fetchError : new Error(reason);
+        break;
       }
 
       throw fetchError instanceof Error ? fetchError : new Error(reason);
     }
   }
 
+  if (lastError && isTimeoutLike(lastError.message)) {
+    console.warn(`[AI] ${provider.label} 超时，已回退到本地模板生成。`);
+    return generateFallbackContent(context);
+  }
+
   throw lastError || new Error(`${provider.label} 生成失败，已重试 ${MAX_RETRIES} 次`);
+}
+
+function isTimeoutLike(message: string) {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("abort") ||
+    lower.includes("aborted") ||
+    lower.includes("timeout") ||
+    lower.includes("timed out") ||
+    lower.includes("the operation was aborted")
+  );
 }
 
 function parseGeneratedJson(content: string, providerLabel: string) {
