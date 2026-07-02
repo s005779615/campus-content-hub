@@ -25,7 +25,7 @@ type GenerationState = {
   selectedAssets: SelectedAssetSummary[];
 };
 
-const defaultModel = "deepseek-v4-pro-260425";
+const fallbackModel = "doubao-seed-2-0-lite-260215";
 
 export function GenerateClient({
   aiStatus,
@@ -40,6 +40,11 @@ export function GenerateClient({
 }) {
   const router = useRouter();
   const models = aiStatus.models.length > 0 ? aiStatus.models : [];
+  const defaultModel =
+    models.find((model) => model.id === aiStatus.model)?.id ??
+    models.find((model) => model.id === fallbackModel)?.id ??
+    models[0]?.id ??
+    fallbackModel;
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [payload, setPayload] = useState<GeneratePayload>({
     schoolId: initialTask?.school_id ?? schools[0]?.id ?? "",

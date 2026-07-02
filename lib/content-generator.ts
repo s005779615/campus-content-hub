@@ -248,7 +248,7 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
       model,
       maxTokensField: "max_tokens",
       supportsJsonMode: false,
-      requestTimeoutMs: model.toLowerCase().includes("deepseek") ? 38000 : 30000
+      requestTimeoutMs: model.toLowerCase().includes("deepseek") ? 22000 : 18000
     };
   }
 
@@ -266,7 +266,7 @@ function getChatCompletionProvider(modelOverride?: string): ChatCompletionProvid
     model,
     maxTokensField: "max_tokens",
     supportsJsonMode: true,
-    requestTimeoutMs: 35000
+    requestTimeoutMs: 22000
   };
 }
 
@@ -300,7 +300,7 @@ async function generateWithChatCompletions(
   // 降低温度，输出更确定 = 稍快（0.82→0.72）
   body.temperature = 0.72;
 
-  const MAX_RETRIES = 1;
+  const MAX_RETRIES = 0;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -363,7 +363,7 @@ async function generateWithChatCompletions(
         continue;
       }
 
-      if (isTimeout) {
+      if (isTimeout || isNetworkIssue) {
         lastError = fetchError instanceof Error ? fetchError : new Error(reason);
         break;
       }
@@ -372,7 +372,7 @@ async function generateWithChatCompletions(
     }
   }
 
-  if (lastError && isTimeoutLike(lastError.message)) {
+  if (lastError && (isTimeoutLike(lastError.message) || lastError.message.toLowerCase().includes("fetch"))) {
     console.warn(`[AI] ${provider.label} 超时，已回退到本地模板生成。`);
     return generateFallbackContent(context);
   }
